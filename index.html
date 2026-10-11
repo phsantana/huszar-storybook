@@ -1,0 +1,1020 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><title>Huszár DS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+/* Tokens do Huszár DS (espelho das coleções Primitive e Semantic do Figma) */
+const PRIM = {
+  Neutral: ['#ffffff','#f5f5f5','#e5e5e5','#d4d4d4','#a3a3a3','#737373','#525252','#404040','#262626','#171717'],
+  Twilight: ['#fce7f4','#f9c3e6','#f28cce','#e64aaf','#d10a87','#b00973','#8d075d','#690646','#46042f'],
+  Sunset: ['#f5e7e8','#e2babe','#cc858b','#b24750','#980a16','#800812','#66070f','#4c050b','#320307'],
+  Sunny: ['#fce8e7','#f7bdbc','#f08a88','#e94f4c','#e11410','#bd110d','#970d0b','#710a08','#4a0705'],
+  Midday: ['#fef3e7','#fcdeba','#fac485','#f7a747','#f4890a','#cd7308','#a35c07','#7a4505','#512d03'],
+  Bluesky: ['#eafaf9','#c5f1ef','#98e7e3','#65dad4','#31cec6','#29ada6','#218a85','#196763','#104441'],
+  Grass: ['#e9f5e7','#c2e2bc','#92cc87','#5bb34b','#24990f','#1e810d','#18670a','#124d08','#0c3205'],
+  Dawn: ['#ece8ef','#cabfd3','#a08eb1','#715589','#411c62','#371852','#2c1342','#210e31','#150920'],
+  Night: ['#03030f'],
+};
+const PRIM_STEPS = { Neutral: [50,100,200,300,400,500,600,700,800,900], Night: [500] };
+const STEPS9 = [100,200,300,400,500,600,700,800,900];
+const primList = [];
+for (const fam in PRIM) PRIM[fam].forEach((hex, i) => { const step = (PRIM_STEPS[fam] || STEPS9)[i]; primList.push({ fam, step, name: fam + '/' + step, css: '--' + fam.toLowerCase() + '-' + step, hex: hex.toUpperCase() }); });
+const primByName = Object.fromEntries(primList.map(p => [p.name, p]));
+
+/* [token, referência] — tokens que apontam para outro semântico usam o nome completo */
+const SEM_GROUPS = [
+  ['Fundo', 'bg', [['bg/page','Neutral/50'],['bg/surface','Neutral/50'],['bg/subtle','Neutral/100'],['bg/brand-subtle','Twilight/100']]],
+  ['Texto', 'text', [['text/primary','Neutral/900'],['text/secondary','Neutral/600'],['text/on-action','Neutral/50'],['text/brand','Twilight/500']]],
+  ['Borda', 'border', [['border/default','Neutral/300'],['border/strong','Neutral/400']]],
+  ['Ação', 'action', [['action/primary','Twilight/500'],['action/primary-hover','Twilight/600'],['action/primary-subtle','Twilight/100']]],
+  ['Feedback', 'feedback', [['feedback/success','Grass/500'],['feedback/success-subtle','Grass/100'],['feedback/danger','Sunny/500'],['feedback/danger-subtle','Sunny/100'],['feedback/warning','Midday/500'],['feedback/warning-subtle','Midday/100'],['feedback/info','Bluesky/700'],['feedback/info-subtle','Bluesky/100']]],
+  ['Ícone', 'icon', [['icon/default','Neutral/900'],['icon/secondary','Neutral/600'],['icon/disabled','Neutral/400'],['icon/on-action','color/text/on-action'],['icon/brand','Twilight/500'],['icon/success','Grass/500'],['icon/danger','Sunny/500'],['icon/warning','Midday/500'],['icon/info','Bluesky/700']]],
+];
+const semList = [];
+SEM_GROUPS.forEach(([label, key, items]) => items.forEach(([n, ref]) => semList.push({ group: key, name: 'color/' + n, css: '--color-' + n.replace(/\//g, '-'), ref })));
+const semByName = Object.fromEntries(semList.map(s => [s.name, s]));
+function resolveRef(ref) { if (primByName[ref]) return ref; const s = semByName[ref]; return s ? resolveRef(s.ref) : ref; }
+semList.forEach(s => { s.prim = resolveRef(s.ref); s.hex = primByName[s.prim].hex; });
+
+const SPACING = { '2xsm':4, xsm:8, sm:16, m:24, lg:32, xlg:40, '2xlg':48, '3xlg':56, '4xlg':64, '5xlg':72, '6xlg':80, '7xlg':88, '8xlg':96 };
+const RADIUS = { '4xsm':4, '3xsm':8, '2xsm':12, xsm:16, sm:20, m:24, lg:28, xlg:32, '2xlg':36, '3xlg':40, '4xlg':44, '5xlg':48, pill:1000 };
+
+/* CSS com as variáveis */
+function buildCss() {
+  let c = ':root {\n  /* Primitive */\n';
+  primList.forEach(p => c += `  ${p.css}: ${p.hex.toLowerCase()};\n`);
+  c += '\n  /* Semantic */\n';
+  semList.forEach(s => c += `  ${s.css}: var(${s.ref.startsWith('color/') ? semByName[s.ref].css : primByName[s.ref].css});\n`);
+  c += '\n  /* Spacing */\n';
+  for (const k in SPACING) c += `  --spacing-${k}: ${SPACING[k]}px;\n`;
+  c += '\n  /* Radius */\n';
+  for (const k in RADIUS) c += `  --radius-${k}: ${RADIUS[k]}px;\n`;
+  return c + '}\n';
+}
+
+/* Configuração do Tailwind */
+const TW = {
+  colors: { transparent: 'transparent', current: 'currentColor' },
+  spacing: {}, borderRadius: { none: '0', full: '9999px' },
+  fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'], display: ['Montserrat', 'Inter', 'system-ui', 'sans-serif'] },
+  fontSize: {
+    eyebrow: ['0.75rem', { lineHeight: '1.5', letterSpacing: '0.08em' }],
+    h1: ['2.875rem', { lineHeight: '1.3' }], h2: ['2rem', { lineHeight: '1.3' }], h3: ['1.75rem', { lineHeight: '1.3' }],
+    h4: ['1.5625rem', { lineHeight: '1.3' }], h5: ['1.375rem', { lineHeight: '1.3' }], h6: ['1.25rem', { lineHeight: '1.3' }],
+    'h1-m': ['2rem', { lineHeight: '1.3' }], 'h2-m': ['1.5625rem', { lineHeight: '1.3' }], 'h3-m': ['1.375rem', { lineHeight: '1.3' }],
+    'h4-m': ['1.25rem', { lineHeight: '1.3' }], 'h5-m': ['1.125rem', { lineHeight: '1.3' }], 'h6-m': ['1rem', { lineHeight: '1.3' }],
+    'body-lg': ['1.125rem', { lineHeight: '1.5' }], body: ['1rem', { lineHeight: '1.5' }],
+    'desc-lg': ['0.875rem', { lineHeight: '1.5' }], desc: ['0.75rem', { lineHeight: '1.5' }],
+  },
+};
+primList.forEach(p => { const f = p.fam.toLowerCase(); (TW.colors[f] = TW.colors[f] || {})[p.step] = `var(${p.css})`; });
+semList.forEach(s => { const [, g, k] = s.name.split('/'); (TW.colors[g] = TW.colors[g] || {})[k] = `var(${s.css})`; });
+for (const k in SPACING) TW.spacing[k] = SPACING[k] + 'px';
+for (const k in RADIUS) TW.borderRadius[k] = RADIUS[k] + 'px';
+function buildTwConfig() {
+  const j = o => JSON.stringify(o, null, 2).replace(/"([A-Za-z_$][\w$]*)":/g, '$1:').replace(/"/g, "'");
+  return `/** @type {import('tailwindcss').Config} */\nmodule.exports = {\n  content: ['./src/**/*.{js,jsx,ts,tsx,html}'],\n  theme: {\n    extend: {\n      colors: ${j(TW.colors).replace(/\n/g, '\n      ')},\n      spacing: ${j(TW.spacing).replace(/\n/g, '\n      ')},\n      borderRadius: ${j(TW.borderRadius).replace(/\n/g, '\n      ')},\n      fontFamily: ${j(TW.fontFamily).replace(/\n/g, '\n      ')},\n      fontSize: ${j(TW.fontSize).replace(/\n/g, '\n      ')},\n    },\n  },\n};\n`;
+}
+/* O site usa o próprio tema (sem extend de cores, para só aceitar tokens) */
+window.tailwind = window.tailwind || {};
+tailwind.config = { theme: { colors: TW.colors, extend: { spacing: TW.spacing, borderRadius: TW.borderRadius, fontFamily: TW.fontFamily, fontSize: TW.fontSize } } };
+
+</script>
+<style>
+:root{color-scheme:light}
+:root {
+  /* Primitive */
+  --neutral-50: #ffffff;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
+  --twilight-100: #fce7f4;
+  --twilight-200: #f9c3e6;
+  --twilight-300: #f28cce;
+  --twilight-400: #e64aaf;
+  --twilight-500: #d10a87;
+  --twilight-600: #b00973;
+  --twilight-700: #8d075d;
+  --twilight-800: #690646;
+  --twilight-900: #46042f;
+  --sunset-100: #f5e7e8;
+  --sunset-200: #e2babe;
+  --sunset-300: #cc858b;
+  --sunset-400: #b24750;
+  --sunset-500: #980a16;
+  --sunset-600: #800812;
+  --sunset-700: #66070f;
+  --sunset-800: #4c050b;
+  --sunset-900: #320307;
+  --sunny-100: #fce8e7;
+  --sunny-200: #f7bdbc;
+  --sunny-300: #f08a88;
+  --sunny-400: #e94f4c;
+  --sunny-500: #e11410;
+  --sunny-600: #bd110d;
+  --sunny-700: #970d0b;
+  --sunny-800: #710a08;
+  --sunny-900: #4a0705;
+  --midday-100: #fef3e7;
+  --midday-200: #fcdeba;
+  --midday-300: #fac485;
+  --midday-400: #f7a747;
+  --midday-500: #f4890a;
+  --midday-600: #cd7308;
+  --midday-700: #a35c07;
+  --midday-800: #7a4505;
+  --midday-900: #512d03;
+  --bluesky-100: #eafaf9;
+  --bluesky-200: #c5f1ef;
+  --bluesky-300: #98e7e3;
+  --bluesky-400: #65dad4;
+  --bluesky-500: #31cec6;
+  --bluesky-600: #29ada6;
+  --bluesky-700: #218a85;
+  --bluesky-800: #196763;
+  --bluesky-900: #104441;
+  --grass-100: #e9f5e7;
+  --grass-200: #c2e2bc;
+  --grass-300: #92cc87;
+  --grass-400: #5bb34b;
+  --grass-500: #24990f;
+  --grass-600: #1e810d;
+  --grass-700: #18670a;
+  --grass-800: #124d08;
+  --grass-900: #0c3205;
+  --dawn-100: #ece8ef;
+  --dawn-200: #cabfd3;
+  --dawn-300: #a08eb1;
+  --dawn-400: #715589;
+  --dawn-500: #411c62;
+  --dawn-600: #371852;
+  --dawn-700: #2c1342;
+  --dawn-800: #210e31;
+  --dawn-900: #150920;
+  --night-500: #03030f;
+
+  /* Semantic */
+  --color-bg-page: var(--neutral-50);
+  --color-bg-surface: var(--neutral-50);
+  --color-bg-subtle: var(--neutral-100);
+  --color-bg-brand-subtle: var(--twilight-100);
+  --color-text-primary: var(--neutral-900);
+  --color-text-secondary: var(--neutral-600);
+  --color-text-on-action: var(--neutral-50);
+  --color-text-brand: var(--twilight-500);
+  --color-border-default: var(--neutral-300);
+  --color-border-strong: var(--neutral-400);
+  --color-action-primary: var(--twilight-500);
+  --color-action-primary-hover: var(--twilight-600);
+  --color-action-primary-subtle: var(--twilight-100);
+  --color-feedback-success: var(--grass-500);
+  --color-feedback-success-subtle: var(--grass-100);
+  --color-feedback-danger: var(--sunny-500);
+  --color-feedback-danger-subtle: var(--sunny-100);
+  --color-feedback-warning: var(--midday-500);
+  --color-feedback-warning-subtle: var(--midday-100);
+  --color-feedback-info: var(--bluesky-700);
+  --color-feedback-info-subtle: var(--bluesky-100);
+  --color-icon-default: var(--neutral-900);
+  --color-icon-secondary: var(--neutral-600);
+  --color-icon-disabled: var(--neutral-400);
+  --color-icon-on-action: var(--color-text-on-action);
+  --color-icon-brand: var(--twilight-500);
+  --color-icon-success: var(--grass-500);
+  --color-icon-danger: var(--sunny-500);
+  --color-icon-warning: var(--midday-500);
+  --color-icon-info: var(--bluesky-700);
+
+  /* Spacing */
+  --spacing-2xsm: 4px;
+  --spacing-xsm: 8px;
+  --spacing-sm: 16px;
+  --spacing-m: 24px;
+  --spacing-lg: 32px;
+  --spacing-xlg: 40px;
+  --spacing-2xlg: 48px;
+  --spacing-3xlg: 56px;
+  --spacing-4xlg: 64px;
+  --spacing-5xlg: 72px;
+  --spacing-6xlg: 80px;
+  --spacing-7xlg: 88px;
+  --spacing-8xlg: 96px;
+
+  /* Radius */
+  --radius-4xsm: 4px;
+  --radius-3xsm: 8px;
+  --radius-2xsm: 12px;
+  --radius-xsm: 16px;
+  --radius-sm: 20px;
+  --radius-m: 24px;
+  --radius-lg: 28px;
+  --radius-xlg: 32px;
+  --radius-2xlg: 36px;
+  --radius-3xlg: 40px;
+  --radius-4xlg: 44px;
+  --radius-5xlg: 48px;
+  --radius-pill: 1000px;
+}
+
+html,body{height:100%}
+body{margin:0;background:var(--color-bg-page,#fff);color:var(--color-text-primary,#171717);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+:root{padding:0!important}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre;tab-size:2}
+.tk-c{color:var(--neutral-500,#737373)}.tk-s{color:var(--grass-300,#86efac)}.tk-k{color:var(--bluesky-300,#7dd3fc)}.tk-t{color:var(--midday-300,#fcd34d)}
+#main{scrollbar-width:thin}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.92em;background:var(--color-bg-subtle,#f5f5f5);padding:0 4px;border-radius:4px}
+pre code{background:none;padding:0}
+.min-w-0-all *{min-width:0}
+</style>
+<div class="flex h-full">
+  <div id="scrim" class="hidden fixed inset-0 z-30 bg-neutral-900/50 lg:hidden"></div>
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 flex w-[280px] -translate-x-full flex-col gap-m border-r border-border-default bg-bg-surface p-sm transition-transform lg:static lg:translate-x-0">
+    <div class="flex items-center gap-xsm px-sm pt-xsm">
+      <span class="flex h-8 w-8 items-center justify-center rounded-xsm bg-action-primary font-display text-body font-bold text-text-on-action">H</span>
+      <span class="font-display text-body-lg font-bold text-text-primary">Huszár DS</span>
+    </div>
+    <nav id="nav" class="flex flex-1 flex-col gap-m overflow-y-auto"></nav>
+  </aside>
+  <div class="flex min-w-0 flex-1 flex-col">
+    <header class="flex items-center gap-sm border-b border-border-default bg-bg-surface px-sm py-xsm lg:px-l">
+      <button id="menuBtn" type="button" aria-label="Abrir menu" class="rounded-pill p-xsm text-text-primary hover:bg-bg-subtle lg:hidden"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <input id="search" type="search" placeholder="Buscar componente ou fundamento" class="min-w-0 flex-1 rounded-pill border border-border-default bg-bg-subtle px-sm py-xsm text-desc-lg text-text-primary placeholder:text-text-secondary focus:outline focus:outline-2 focus:outline-action-primary sm:max-w-[420px]">
+      <a href="https://www.figma.com/design/VYcfKzEO4wq1HtC63I7Xsn/Husz%C3%A1r-DS" target="_blank" rel="noopener" class="ml-auto whitespace-nowrap rounded-pill border border-border-strong px-sm py-xsm text-desc font-bold text-text-primary hover:bg-bg-subtle">Abrir no Figma</a>
+    </header>
+    <main id="main" class="min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-bg-page">
+      <div id="page" class="min-w-0-all mx-auto w-full max-w-[1120px] px-sm py-lg lg:px-xlg lg:py-2xlg"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+/* ===== Playground: motor genérico (preview + geração de código) ===== */
+const ICON_PATHS = {
+  'arrow-right': '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  'plus': '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  'check': '<path d="M20 6 9 17l-5-5"/>',
+  'heart': '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  'star': '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  'clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  'calendar': '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  'pin': '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  'award': '<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>',
+  'play': '<polygon points="6 3 20 12 6 21 6 3"/>',
+  'search': '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  'x': '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  'chevron-right': '<path d="m9 18 6-6-6-6"/>',
+  'ticket': '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+  'download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+};
+const ICON_LABELS = { 'arrow-right': 'Seta', plus: 'Mais', check: 'Check', heart: 'Coração', star: 'Estrela', clock: 'Relógio', calendar: 'Calendário', pin: 'Local', award: 'Medalha', play: 'Play', search: 'Busca', x: 'Fechar', 'chevron-right': 'Chevron', ticket: 'Ingresso', download: 'Download' };
+const svg = n => `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[n]}</svg>`;
+const pascal = n => n.replace(/(^|-)(\w)/g, (_, __, c) => c.toUpperCase()) + 'Icon';
+const ICON_OPTS = [['', 'Nenhum'], ...Object.keys(ICON_LABELS).map(k => [k, ICON_LABELS[k]])];
+
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const escA = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+const pre = (p, cls) => cls.split(/\s+/).filter(Boolean).map(x => p + x).join(' ');
+const N = (t, c, a, ch, extra) => Object.assign({ t, c, a: a || {}, ch: (ch || []).filter(x => x !== null && x !== undefined && x !== false) }, extra || {});
+const I = n => ({ icon: n });
+const VOID = new Set(['input', 'img', 'br', 'hr']);
+
+function attrsOf(node, withPreview) {
+  const all = Object.assign({}, node.a, withPreview ? node.p : {});
+  let s = '';
+  const cls = (node.c || '') + (withPreview && node.f ? ' ' + node.f : '');
+  if (cls.trim()) s += ` class="${escA(cls.trim().replace(/\s+/g, ' '))}"`;
+  for (const k in all) { const v = all[k]; if (v === false || v === null || v === undefined) continue; s += v === true ? ` ${k}` : ` ${k}="${escA(v)}"`; }
+  return s;
+}
+function renderPreview(node) {
+  if (typeof node === 'string') return esc(node);
+  if (node.icon) return svg(node.icon);
+  const inner = node.ch.map(renderPreview).join('');
+  return VOID.has(node.t) ? `<${node.t}${attrsOf(node, true)}>` : `<${node.t}${attrsOf(node, true)}>${inner}</${node.t}>`;
+}
+function toHTML(node, ind = '') {
+  if (typeof node === 'string') return ind + esc(node);
+  if (node.icon) return ind + svg(node.icon);
+  const open = `<${node.t}${attrsOf(node, false)}`;
+  if (VOID.has(node.t)) return `${ind}${open} />`;
+  if (!node.ch.length) return `${ind}${open}></${node.t}>`;
+  if (node.ch.every(c => typeof c === 'string')) return `${ind}${open}>${node.ch.map(esc).join('')}</${node.t}>`;
+  return `${ind}${open}>\n${node.ch.map(c => toHTML(c, ind + '  ')).join('\n')}\n${ind}</${node.t}>`;
+}
+const fmt = (o, ind = '') => '{\n' + Object.entries(o).map(([k, v]) => ind + '  ' + (/^[a-z_$][\w$]*$/i.test(k) ? k : `'${k}'`) + ': ' + (typeof v === 'string' ? `'${v}'` : fmt(v, ind + '  '))).join(',\n') + '\n' + ind + '}';
+
+/* ---------- BOTÃO ---------- */
+const BTN_BASE = 'inline-flex items-center justify-center gap-2xsm rounded-pill font-bold whitespace-nowrap select-none transition-[filter,background-color] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0';
+const BTN = {
+  sale: { l: 'Sale', base: 'bg-gradient-to-r from-action-primary to-feedback-danger text-text-on-action', hover: 'brightness-[.6]', active: 'brightness-[.6]', off: 'opacity-[.32]' },
+  primary: { l: 'Primary', base: 'bg-action-primary text-text-on-action', hover: 'brightness-[.8]', active: 'brightness-[.6]', off: 'opacity-[.32]' },
+  sucesso: { l: 'Sucesso', base: 'bg-[#0c7a0e] text-text-on-action', hover: 'brightness-[.6]', active: 'brightness-[.6]', off: 'opacity-[.32]' },
+  secondary: { l: 'Secondary', base: 'bg-transparent text-action-primary ring-1 ring-inset ring-action-primary', hover: 'brightness-[.6]', active: 'brightness-[.6]', off: 'opacity-[.32]' },
+  'primary-inverse': { l: 'Primary/Inverse', base: 'bg-bg-surface text-action-primary', hover: 'bg-bg-subtle', active: 'bg-border-default', off: 'opacity-[.64]' },
+  'secondary-inverse': { l: 'Secondary/Inverse', base: 'bg-transparent text-text-on-action ring-1 ring-inset ring-bg-surface', hover: 'brightness-[.6]', active: 'brightness-[.6]', off: 'opacity-[.32]' },
+  soft: { l: 'Soft', base: 'bg-bg-brand-subtle text-text-brand', hover: 'brightness-[.8]', active: 'brightness-[.6]', off: 'opacity-[.32]' },
+  ghost: { l: 'Ghost', base: 'bg-transparent text-text-brand', hover: 'bg-bg-subtle', active: 'bg-border-default', off: 'opacity-[.32]' },
+};
+const BTN_SIZES = { lg: 'px-m py-sm', md: 'px-m py-3', sm: 'px-sm py-xsm' };
+const btnClass = (variant, size) => [BTN_BASE, variant === 'sale' && size === 'lg' ? 'text-body' : 'text-desc-lg', BTN_SIZES[size], BTN[variant].base, pre('hover:', BTN[variant].hover), pre('active:', BTN[variant].active), pre('disabled:', BTN[variant].off + ' pointer-events-none')].join(' ');
+function btnTree(s, forced) {
+  const v = BTN[s.variant];
+  return N('button', btnClass(s.variant, s.size), { type: 'button', disabled: s.state === 'disabled' }, [s.leading && I(s.leading), s.label, s.trailing && I(s.trailing)], { f: forced ? (s.state === 'hover' ? v.hover : s.state === 'pressed' ? v.active : '') : '' });
+}
+
+/* ---------- Definições dos playgrounds ---------- */
+const PG = {};
+
+PG.botao = {
+  file: 'Button.jsx',
+  controls: [
+    { k: 'variant', label: 'Variante', type: 'select', opts: Object.keys(BTN).map(k => [k, BTN[k].l]), def: 'primary' },
+    { k: 'size', label: 'Tamanho', type: 'seg', opts: [['lg', 'LG'], ['md', 'MD'], ['sm', 'SM']], def: 'md' },
+    { k: 'state', label: 'Estado', type: 'seg', opts: [['normal', 'Normal'], ['hover', 'Hover'], ['pressed', 'Pressionado'], ['disabled', 'Desabilitado']], def: 'normal' },
+    { k: 'label', label: 'Rótulo', type: 'text', def: 'Ver ingressos' },
+    { k: 'leading', label: 'Ícone à esquerda', type: 'select', opts: ICON_OPTS, def: '' },
+    { k: 'trailing', label: 'Ícone à direita', type: 'select', opts: ICON_OPTS, def: '' },
+  ],
+  gallery: 'variant',
+  stage: s => s.variant.endsWith('inverse') ? 'dark' : 'light',
+  tree: (s, forced) => btnTree(s, forced),
+  usage: s => {
+    const p = [s.variant !== 'primary' && `variant="${s.variant}"`, s.size !== 'md' && `size="${s.size}"`, s.leading && `leadingIcon={<${pascal(s.leading)} />}`, s.trailing && `trailingIcon={<${pascal(s.trailing)} />}`, s.state === 'disabled' && 'disabled'].filter(Boolean);
+    return `import { Button } from './Button';\n\n<Button${p.length ? ' ' + p.join(' ') : ''}>${s.label}</Button>`;
+  },
+  source: () => {
+    const variants = {}; for (const k in BTN) variants[k] = [BTN[k].base, pre('hover:', BTN[k].hover), pre('active:', BTN[k].active), pre('disabled:', BTN[k].off + ' pointer-events-none')].join(' ');
+    return `const base =\n  '${BTN_BASE}';\n\nconst variants = ${fmt(variants)};\n\nconst sizes = ${fmt(BTN_SIZES)};\n\nexport function Button({\n  variant = 'primary',\n  size = 'md',\n  leadingIcon,\n  trailingIcon,\n  className = '',\n  children,\n  ...props\n}) {\n  // Sale LG usa texto de 16px; os demais, 14px\n  const text = variant === 'sale' && size === 'lg' ? 'text-body' : 'text-desc-lg';\n  return (\n    <button\n      type="button"\n      className={[base, text, sizes[size], variants[variant], className].join(' ')}\n      {...props}\n    >\n      {leadingIcon}\n      {children}\n      {trailingIcon}\n    </button>\n  );\n}\n`;
+  },
+};
+
+/* ---------- BADGE ---------- */
+const BADGE_BASE = 'inline-flex items-center gap-2xsm rounded-pill px-xsm py-2xsm text-desc whitespace-nowrap [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0 [&>svg]:text-icon-default';
+const BADGE = {
+  distancia: { l: 'Distância', label: 'Distância', icon: 'pin', tone: 'bg-dawn-100 text-dawn-500' },
+  tempo: { l: 'Tempo', label: 'Tempo', icon: 'clock', tone: 'bg-feedback-warning-subtle text-dawn-500' },
+  calendario: { l: 'Calendário', label: 'Calendário', icon: 'calendar', tone: 'bg-feedback-warning-subtle text-dawn-500' },
+  aovivo: { l: 'Ao vivo', label: 'Tocando agora', icon: 'play', tone: 'bg-feedback-warning-subtle text-feedback-danger' },
+  ouro: { l: 'Medalha de ouro', label: 'Medalha de ouro', icon: 'award', tone: 'bg-feedback-warning-subtle text-dawn-500' },
+  prata: { l: 'Medalha de prata', label: 'Medalha de prata', icon: 'award', tone: 'bg-bg-subtle text-text-secondary' },
+  bronze: { l: 'Medalha de bronze', label: 'Medalha de bronze', icon: 'award', tone: 'bg-feedback-danger-subtle text-sunset-500' },
+};
+PG.badge = {
+  file: 'Badge.jsx',
+  controls: [
+    { k: 'tipo', label: 'Finalidade', type: 'select', opts: Object.keys(BADGE).map(k => [k, BADGE[k].l]), def: 'tempo' },
+    { k: 'icon', label: 'Ícone', type: 'bool', def: true },
+    { k: 'label', label: 'Rótulo', type: 'text', def: 'Tempo' },
+  ],
+  onChange: (s, k) => { if (k === 'tipo') s.label = BADGE[s.tipo].label; },
+  gallery: 'tipo',
+  galleryApply: (s, v) => ({ label: BADGE[v].label }),
+  stage: () => 'light',
+  tree: s => N('span', BADGE_BASE + ' ' + BADGE[s.tipo].tone, {}, [s.icon && I(BADGE[s.tipo].icon), s.label]),
+  usage: s => `import { Badge } from './Badge';\n\n<Badge${s.tipo !== 'tempo' ? ` tipo="${s.tipo}"` : ''}${s.icon ? ` icon={<${pascal(BADGE[s.tipo].icon)} />}` : ''}>${s.label}</Badge>`,
+  source: () => { const t = {}; for (const k in BADGE) t[k] = BADGE[k].tone; return `const base =\n  '${BADGE_BASE}';\n\nconst tipos = ${fmt(t)};\n\nexport function Badge({ tipo = 'tempo', icon, className = '', children }) {\n  return (\n    <span className={[base, tipos[tipo], className].join(' ')}>\n      {icon}\n      {children}\n    </span>\n  );\n}\n`; },
+};
+
+/* ---------- CHIP ---------- */
+const CHIP_BASE = 'inline-flex items-center justify-center gap-2xsm rounded-pill whitespace-nowrap select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary disabled:opacity-[.32] disabled:pointer-events-none [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0';
+const GRAD = 'bg-gradient-to-r from-[#d43599] to-feedback-danger';
+const CHIP = {
+  twilight: { l: 'Twilight', on: 'bg-action-primary text-text-on-action font-bold', off: 'ring-1 ring-inset ring-action-primary text-action-primary' },
+  white: { l: 'White', on: 'bg-bg-surface text-action-primary font-bold', off: 'ring-1 ring-inset ring-bg-surface text-text-on-action' },
+  gray: { l: 'Gray', on: 'bg-bg-subtle text-text-secondary font-bold', off: 'bg-bg-subtle text-text-secondary' },
+  gradient: { l: 'Gradient', on: GRAD + ' text-text-on-action font-bold', off: null },
+};
+const chipSize = z => (z === 'md' ? 'text-desc-lg' : 'text-desc');
+PG.chip = {
+  file: 'Chip.jsx',
+  controls: [
+    { k: 'tipo', label: 'Tipo', type: 'select', opts: Object.keys(CHIP).map(k => [k, CHIP[k].l]), def: 'twilight' },
+    { k: 'size', label: 'Tamanho', type: 'seg', opts: [['md', 'Medium'], ['sm', 'Small']], def: 'md' },
+    { k: 'checked', label: 'Selecionado', type: 'bool', def: true },
+    { k: 'enabled', label: 'Habilitado', type: 'bool', def: true },
+    { k: 'icon', label: 'Ícone', type: 'select', opts: ICON_OPTS, def: '' },
+    { k: 'label', label: 'Rótulo', type: 'text', def: 'Hoje' },
+  ],
+  gallery: 'tipo',
+  stage: s => (s.tipo === 'white' ? 'dark' : 'light'),
+  tree: s => {
+    const c = CHIP[s.tipo], z = chipSize(s.size);
+    const attrs = { type: 'button', 'aria-pressed': String(!!s.checked), disabled: !s.enabled };
+    const prev = { 'data-toggle': 'checked' };
+    if (s.tipo === 'gradient' && !s.checked) {
+      return N('button', `${CHIP_BASE} ${GRAD} p-px`, attrs, [N('span', `inline-flex items-center gap-2xsm rounded-pill bg-bg-surface px-[15px] py-[7px] ${z}`, {}, [s.icon && I(s.icon), N('span', `${GRAD} bg-clip-text text-transparent`, {}, [s.label])])], { p: prev });
+    }
+    return N('button', [CHIP_BASE, z, 'px-sm py-xsm', s.checked ? c.on : c.off].join(' '), attrs, [s.icon && I(s.icon), s.label], { p: prev });
+  },
+  usage: s => `import { Chip } from './Chip';\n\n<Chip${s.tipo !== 'twilight' ? ` tipo="${s.tipo}"` : ''}${s.size !== 'md' ? ` size="${s.size}"` : ''}${s.checked ? ' checked' : ''}${!s.enabled ? ' disabled' : ''}${s.icon ? ` icon={<${pascal(s.icon)} />}` : ''}>${s.label}</Chip>`,
+  source: () => {
+    const tipos = {}; for (const k in CHIP) if (CHIP[k].off) tipos[k] = { on: CHIP[k].on, off: CHIP[k].off };
+    return `const base =\n  '${CHIP_BASE}';\n\nconst grad = '${GRAD}';\n\nconst tipos = ${fmt(tipos)};\n\nexport function Chip({ tipo = 'twilight', size = 'md', checked = false, icon, className = '', children, ...props }) {\n  const text = size === 'md' ? 'text-desc-lg' : 'text-desc';\n\n  // Gradient sem seleção: borda e texto em degradê\n  if (tipo === 'gradient' && !checked) {\n    return (\n      <button type="button" aria-pressed="false" className={[base, grad, 'p-px', className].join(' ')} {...props}>\n        <span className={\`inline-flex items-center gap-2xsm rounded-pill bg-bg-surface px-[15px] py-[7px] \${text}\`}>\n          {icon}\n          <span className={\`\${grad} bg-clip-text text-transparent\`}>{children}</span>\n        </span>\n      </button>\n    );\n  }\n\n  const tone = tipo === 'gradient'\n    ? \`\${grad} text-text-on-action font-bold\`\n    : tipos[tipo][checked ? 'on' : 'off'];\n  return (\n    <button type="button" aria-pressed={checked} className={[base, text, 'px-sm py-xsm', tone, className].join(' ')} {...props}>\n      {icon}\n      {children}\n    </button>\n  );\n}\n`;
+  },
+};
+
+/* ---------- TAG ---------- */
+const TAG_CLS = 'inline-flex items-center gap-2xsm rounded-4xsm bg-bg-brand-subtle px-xsm py-2xsm text-desc text-action-primary whitespace-nowrap [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0';
+PG.tag = {
+  file: 'Tag.jsx',
+  controls: [{ k: 'icon', label: 'Ícone', type: 'select', opts: ICON_OPTS, def: 'ticket' }, { k: 'label', label: 'Rótulo', type: 'text', def: 'Tag' }],
+  stage: () => 'light',
+  tree: s => N('span', TAG_CLS, {}, [s.icon && I(s.icon), s.label]),
+  usage: s => `import { Tag } from './Tag';\n\n<Tag${s.icon ? ` icon={<${pascal(s.icon)} />}` : ''}>${s.label}</Tag>`,
+  source: () => `const base =\n  '${TAG_CLS}';\n\nexport function Tag({ icon, className = '', children }) {\n  return (\n    <span className={[base, className].join(' ')}>\n      {icon}\n      {children}\n    </span>\n  );\n}\n`,
+};
+
+/* ---------- INPUT ---------- */
+const FIELD = 'flex items-center gap-sm rounded-pill border bg-bg-surface p-sm [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0 [&>svg]:text-icon-secondary';
+PG.input = {
+  file: 'Input.jsx',
+  controls: [
+    { k: 'tipo', label: 'Tipo', type: 'seg', opts: [['text', 'Text'], ['search', 'Busca']], def: 'text' },
+    { k: 'state', label: 'Estado', type: 'seg', opts: [['default', 'Default'], ['active', 'Ativo'], ['error', 'Erro']], def: 'default' },
+    { k: 'label', label: 'Label', type: 'text', def: 'Nome do rolê' },
+    { k: 'placeholder', label: 'Placeholder', type: 'text', def: 'Digite aqui' },
+    { k: 'desc', label: 'Descrição', type: 'text', def: 'Use o nome que aparece no ingresso.' },
+    { k: 'left', label: 'Ícone à esquerda', type: 'select', opts: ICON_OPTS, def: '' },
+    { k: 'right', label: 'Ícone à direita', type: 'select', opts: ICON_OPTS, def: '' },
+  ],
+  gallery: 'state',
+  stage: () => 'light',
+  tree: s => {
+    const err = s.state === 'error';
+    const val = s.state === 'default' ? null : (s.tipo === 'search' ? 'Festival' : 'Texto digitado');
+    if (s.tipo === 'search') {
+      return N('div', `${FIELD} w-64 border-border-default`, {}, [I('search'), N('input', 'min-w-0 flex-1 bg-transparent text-desc-lg text-text-primary outline-none placeholder:text-text-secondary', { type: 'search', placeholder: 'Qual rolê você procura?', value: val, 'aria-label': 'Buscar' }), s.state === 'active' && I('x')]);
+    }
+    const tx = err ? 'text-sunset-500' : 'text-text-secondary';
+    return N('div', 'flex w-64 flex-col gap-2xsm', {}, [
+      s.label && N('label', `text-desc-lg ${tx}`, { for: 'campo' }, [s.label]),
+      N('div', `${FIELD} ${err ? 'border-sunset-500' : 'border-border-default'}`, {}, [s.left && I(s.left), N('input', `min-w-0 flex-1 bg-transparent text-body outline-none ${err ? 'text-sunset-500 placeholder:text-sunset-500' : 'text-text-primary placeholder:text-text-secondary'}`, { id: 'campo', type: 'text', placeholder: s.placeholder, value: val }), s.right && I(s.right)]),
+      s.desc && N('p', `text-desc-lg ${tx}`, {}, [s.desc]),
+    ]);
+  },
+  usage: s => s.tipo === 'search'
+    ? `import { Input } from './Input';\n\n<Input variant="search" placeholder="Qual rolê você procura?" />`
+    : `import { Input } from './Input';\n\n<Input${s.label ? `\n  label="${s.label}"` : ''}\n  placeholder="${s.placeholder}"${s.desc ? `\n  description="${s.desc}"` : ''}${s.left ? `\n  leftIcon={<${pascal(s.left)} />}` : ''}${s.right ? `\n  rightIcon={<${pascal(s.right)} />}` : ''}${s.state === 'error' ? '\n  error' : ''}\n/>`,
+  source: () => `const field =\n  '${FIELD}';\n\nexport function Input({\n  variant = 'text',\n  label,\n  description,\n  leftIcon,\n  rightIcon,\n  error = false,\n  id,\n  className = '',\n  ...props\n}) {\n  if (variant === 'search') {\n    return (\n      <div className={\`\${field} w-64 border-border-default \${className}\`}>\n        <SearchIcon />\n        <input\n          type="search"\n          className="min-w-0 flex-1 bg-transparent text-desc-lg text-text-primary outline-none placeholder:text-text-secondary"\n          {...props}\n        />\n      </div>\n    );\n  }\n\n  const tone = error ? 'text-sunset-500' : 'text-text-secondary';\n  return (\n    <div className={\`flex w-64 flex-col gap-2xsm \${className}\`}>\n      {label && <label htmlFor={id} className={\`text-desc-lg \${tone}\`}>{label}</label>}\n      <div className={\`\${field} \${error ? 'border-sunset-500' : 'border-border-default'}\`}>\n        {leftIcon}\n        <input\n          id={id}\n          aria-invalid={error}\n          className={\`min-w-0 flex-1 bg-transparent text-body outline-none \${error ? 'text-sunset-500 placeholder:text-sunset-500' : 'text-text-primary placeholder:text-text-secondary'}\`}\n          {...props}\n        />\n        {rightIcon}\n      </div>\n      {description && <p className={\`text-desc-lg \${tone}\`}>{description}</p>}\n    </div>\n  );\n}\n`,
+};
+
+/* ---------- LINK ---------- */
+const LINK_CLS = 'inline-flex items-center gap-xsm text-desc text-action-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0';
+PG.link = {
+  file: 'Link.jsx',
+  controls: [{ k: 'label', label: 'Rótulo', type: 'text', def: 'Saiba mais' }, { k: 'icon', label: 'Ícone', type: 'select', opts: ICON_OPTS, def: 'chevron-right' }],
+  stage: () => 'light',
+  tree: s => N('a', LINK_CLS, { href: '#' }, [s.label, s.icon && I(s.icon)], { p: { 'data-noop': '1' } }),
+  usage: s => `import { Link } from './Link';\n\n<Link href="/rota"${s.icon ? ` icon={<${pascal(s.icon)} />}` : ''}>${s.label}</Link>`,
+  source: () => `const base =\n  '${LINK_CLS}';\n\nexport function Link({ icon, className = '', children, ...props }) {\n  return (\n    <a className={[base, className].join(' ')} {...props}>\n      {children}\n      {icon}\n    </a>\n  );\n}\n`,
+};
+
+/* ---------- SWITCHER ---------- */
+const SW_BOX = 'inline-flex gap-xsm rounded-pill bg-bg-brand-subtle p-2xsm';
+const SW_ON = 'bg-action-primary text-text-on-action font-bold';
+const SW_OFF = 'bg-bg-subtle text-text-secondary';
+const SW_ITEM = 'rounded-pill px-sm py-xsm text-desc whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary';
+const items = s => String(s.items).split(',').map(x => x.trim()).filter(Boolean).slice(0, 5);
+PG.switcher = {
+  file: 'Switcher.jsx',
+  controls: [{ k: 'items', label: 'Opções (separadas por vírgula)', type: 'text', def: 'Hoje, Amanhã, Fim de semana' }, { k: 'selected', label: 'Selecionada', type: 'seg', opts: [['0', '1ª'], ['1', '2ª'], ['2', '3ª'], ['3', '4ª']], def: '0' }],
+  stage: () => 'light',
+  tree: s => { const l = items(s); const sel = Math.min(+s.selected, l.length - 1); return N('div', SW_BOX, { role: 'radiogroup' }, l.map((t, i) => N('button', `${SW_ITEM} ${i === sel ? SW_ON : SW_OFF}`, { type: 'button', role: 'radio', 'aria-checked': String(i === sel) }, [t], { p: { 'data-set': 'selected=' + i } }))); },
+  usage: s => `import { Switcher } from './Switcher';\n\n<Switcher\n  options={[${items(s).map(x => `'${x}'`).join(', ')}]}\n  value={${Math.min(+s.selected, items(s).length - 1)}}\n  onChange={setValue}\n/>`,
+  source: () => `const box = '${SW_BOX}';\nconst item =\n  '${SW_ITEM}';\nconst on = '${SW_ON}';\nconst off = '${SW_OFF}';\n\nexport function Switcher({ options, value, onChange }) {\n  return (\n    <div role="radiogroup" className={box}>\n      {options.map((label, i) => (\n        <button\n          key={label}\n          type="button"\n          role="radio"\n          aria-checked={i === value}\n          onClick={() => onChange(i)}\n          className={\`\${item} \${i === value ? on : off}\`}\n        >\n          {label}\n        </button>\n      ))}\n    </div>\n  );\n}\n`,
+};
+
+/* ---------- TAB ---------- */
+const TAB_LIST = 'flex border-b border-text-secondary';
+const TAB_ITEM = 'inline-flex items-center gap-2xsm px-sm py-2xsm text-desc-lg whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0';
+const TAB_ON = 'font-bold text-action-primary border-b-2 border-action-primary -mb-px';
+const TAB_OFF = 'text-text-secondary';
+PG.tab = {
+  file: 'Tabs.jsx',
+  controls: [{ k: 'items', label: 'Abas (separadas por vírgula)', type: 'text', def: 'Eventos, Artistas, Locais' }, { k: 'selected', label: 'Selecionada', type: 'seg', opts: [['0', '1ª'], ['1', '2ª'], ['2', '3ª'], ['3', '4ª']], def: '0' }, { k: 'icon', label: 'Ícone', type: 'select', opts: ICON_OPTS, def: '' }],
+  stage: () => 'light',
+  tree: s => { const l = items(s); const sel = Math.min(+s.selected, l.length - 1); return N('div', TAB_LIST, { role: 'tablist' }, l.map((t, i) => N('button', `${TAB_ITEM} ${i === sel ? TAB_ON : TAB_OFF}`, { type: 'button', role: 'tab', 'aria-selected': String(i === sel) }, [s.icon && I(s.icon), t], { p: { 'data-set': 'selected=' + i } }))); },
+  usage: s => `import { Tabs } from './Tabs';\n\n<Tabs\n  tabs={[${items(s).map(x => `'${x}'`).join(', ')}]}\n  value={${Math.min(+s.selected, items(s).length - 1)}}\n  onChange={setValue}${s.icon ? `\n  icon={<${pascal(s.icon)} />}` : ''}\n/>`,
+  source: () => `const list = '${TAB_LIST}';\nconst item =\n  '${TAB_ITEM}';\nconst on = '${TAB_ON}';\nconst off = '${TAB_OFF}';\n\nexport function Tabs({ tabs, value, onChange, icon }) {\n  return (\n    <div role="tablist" className={list}>\n      {tabs.map((label, i) => (\n        <button\n          key={label}\n          type="button"\n          role="tab"\n          aria-selected={i === value}\n          onClick={() => onChange(i)}\n          className={\`\${item} \${i === value ? on : off}\`}\n        >\n          {icon}\n          {label}\n        </button>\n      ))}\n    </div>\n  );\n}\n`,
+};
+
+/* Documentação dos componentes — espelho dos documentos do Figma (fase 1) */
+const B = (b, h, rows) => ({ b, h: h || '', r: rows });
+const ANAT = 'medidas lidas do componente (primeira variante)';
+const DOCS = [
+/* ================= ÁTOMOS ================= */
+{ id: 'badge', n: 'Badge', lv: 'a', fg: '9-1002', s: '2 componentes · 8 variantes · tokens da coleção Semantic',
+  v: [B('Átomo/Badge', '7 variantes · Icon: True · Finalidade: Distância, Tempo, Medalha de ouro, Medalha de prata, Medalha de bronze, Ao vivo, Calendário', [
+    ['Distância', '89 × 26 px · fundo: color scheme/brand/night/lightest · texto: Dawn/500'], ['Tempo', '75 × 26 px · fundo: color/feedback/warning-subtle · texto: color scheme/brand/summer/dawn'], ['Calendário', '98 × 26 px · fundo: color/feedback/warning-subtle · texto: color scheme/brand/summer/dawn'], ['Ao vivo', '121 × 26 px · fundo: color/feedback/warning-subtle · texto: color scheme/brand/summer/sunny'], ['Medalha de ouro', '132 × 26 px · fundo: color/feedback/warning-subtle · texto: color scheme/brand/summer/dawn'], ['Medalha de prata', '136 × 26 px · fundo: color/bg/subtle · texto: color/text/secondary'], ['Medalha de bronze', '145 × 26 px · fundo: color/feedback/danger-subtle · texto: Sunset/500']]),
+    B('Átomo/Data', 'componente único', [['Padrão', '64 × 73 px · fundo: #ffffff (sem token) · texto: color/text/secondary · borda: #f7f7f7 (sem token)']])],
+  p: [B('Átomo/Badge', '', [['Icon', 'Variante. Opções: True.'], ['Finalidade', 'Variante. Opções: Distância, Tempo, Medalha de ouro, Medalha de prata, Medalha de bronze, Ao vivo, Calendário.']]), B('Átomo/Data', '', [['Mês', 'Booleana. Padrão: ligado.']])],
+  a: [B('Átomo/Badge', ANAT, [['Dimensões', '75–145 × 26 px (varia entre variantes)'], ['Layout', 'Horizontal · padding T/D/B/E 4 / 8 / 4 / 8 px · gap 4 px'], ['Raio', '1000 (radius/pill) px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Icon · Label']]), B('Átomo/Data', ANAT, [['Dimensões', '64 × 73 px'], ['Layout', 'Vertical · padding T/D/B/E 8 / 16 / 8 / 16 px · gap 0 px'], ['Raio', '16 px'], ['Borda', '1 px · #f7f7f7 (sem token)'], ['Tipografia', 'Descrição/Pequena · Mobile/Título/H6'], ['Camadas', 'Mês · Dia · Semana']])] },
+
+{ id: 'botao', n: 'Botão', lv: 'a', fg: '9-996', s: '5 componentes · 122 variantes · tokens da coleção Semantic', custom: true,
+  p: [B('Sale, Primary, Sucesso, Secondary, Inverse, Soft e Ghost', '', [['Leading', 'Booleana. Mostra o ícone antes do rótulo.'], ['Trailing', 'Booleana. Mostra o ícone depois do rótulo.'], ['Ícone escolhido', 'Troca de instância.'], ['Tamanho', 'Variante. Opções: LG, MD, SM.'], ['Estado', 'Variante. Opções: _active, _hover, _clicked (Sucesso: _active, _hover). Variante: Sale, Primary, Sucesso, Secondary, Primary Inverse, Secondary Inverse, Soft, Ghost.'], ['Disable', 'Variante. Opções: false, true.']]), B('Float/Voltar', '', [['Ícone', 'Troca de instância.'], ['Inverted', 'Variante. Opções: True, False.'], ['Transparent', 'Variante. Opções: True, False.']]), B('Circular', '', [['Ícone', 'Troca de instância.'], ['Cor', 'Variante. Opções: midday-light, neutral-lightest.']])],
+  a: [B('Float/Voltar', 'botão flutuante · 4 variantes', [['Dimensões', '32 × 32 px'], ['Fundo', 'Inverted + Transparent: branco 24% · Inverted: color/bg/surface · Transparent: preto 24% · padrão: color/text/primary']]), B('Circular', 'botão de ícone · 2 variantes', [['Dimensões', '40 × 40 px'], ['midday-light', 'fundo: color/feedback/warning-subtle'], ['neutral-lightest', 'fundo: color/bg/surface']])] },
+
+{ id: 'chip', n: 'Chip', lv: 'a', fg: '9-1000', s: '2 componentes · 29 variantes · tokens da coleção Semantic',
+  v: [B('Chips', '28 variantes · Checked: True, False · Habilitado: True, False · Destaque: True, False · Tipo: White, Twilight, Gray, Gradient · Tamanho: Medium, Small', [['Twilight · Medium', '83–84 × 37 px · fundo: color/action/primary · texto: color/text/on-action (selecionado) ou color/action/primary (borda 1 px)'], ['Gradient', 'fundo e borda em degradê #d43599 → #e11410 (sem token) · Destaque: True'], ['White', 'fundo: color/bg/surface · texto: color/action/primary (selecionado)'], ['Gray', 'fundo: color/bg/subtle · texto: color/text/secondary'], ['Desabilitado', 'opacidade 32%']]), B('Carrossel de filtros', 'componente único', [['Padrão', '83 × 37 px · fundo: transparente · texto: color/action/primary']])],
+  p: [B('Chips', '', [['Ícone', 'Booleana. Padrão: ligado.'], ['Ícone escolhido', 'Troca de instância.'], ['Checked', 'Variante. Opções: True, False.'], ['Habilitado', 'Variante. Opções: True, False.'], ['Destaque', 'Variante. Opções: True, False.'], ['Tipo', 'Variante. Opções: White, Twilight, Gray, Gradient.'], ['Tamanho', 'Variante. Opções: Medium, Small.']]), B('Carrossel de filtros', '', [['Container', 'SLOT']])],
+  a: [B('Chips', ANAT, [['Dimensões', '78–84 × 34–37 px (varia entre variantes)'], ['Layout', 'Horizontal · padding T/D/B/E 8 (spacing/xsm) / 16 (spacing/sm) / 8 (spacing/xsm) / 16 (spacing/sm) px · gap 4 (spacing/2xsm) px'], ['Raio', '1000 px'], ['Borda', '1 px · color/action/primary'], ['Tipografia', 'Descrição/Grande'], ['Camadas', 'Icon · Text']]), B('Carrossel de filtros', ANAT, [['Dimensões', '83 × 37 px'], ['Layout', 'Horizontal · padding 0 nos 4 lados px · gap 8 (spacing/xsm) px'], ['Tipografia', 'Descrição/Grande'], ['Camadas', 'Container']])] },
+
+{ id: 'formulario', n: 'Formulário', lv: 'a', fg: '1449-1191', s: '2 componentes · 4 variantes · tokens da coleção Semantic',
+  v: [B('Radio button', '2 variantes · Checked: True, False', [['Checked: True', '24 × 24 px · fundo: transparente · borda: color/action/primary'], ['Checked: False', '24 × 24 px · fundo: transparente · borda: color/border/default']]), B('Checkbox', '2 variantes · Checked: True, False', [['Checked: True', '24 × 24 px · fundo: color/action/primary'], ['Checked: False', '24 × 24 px · fundo: transparente · borda: color/border/default']])],
+  p: [B('Radio button', '', [['Checked', 'Variante. Opções: True, False.']]), B('Checkbox', '', [['Checked', 'Variante. Opções: True, False.']])],
+  a: [B('Radio button', ANAT, [['Dimensões', '24 × 24 px'], ['Raio', '1000 (radius/pill) px'], ['Borda', '1 px · color/action/primary'], ['Camadas', 'Ellipse 1']]), B('Checkbox', ANAT, [['Dimensões', '24 × 24 px'], ['Raio', '8 (radius/3xsm) px'], ['Camadas', 'Notificação e Sinalização/check']])] },
+
+{ id: 'icone', n: 'Ícone', lv: 'a', fg: '9-1004', s: '582 ícones em 5 seções · tokens da família color/icon/*', icons: true,
+  x: [B('Seções da biblioteca', 'quantidade de ícones (componentes) em cada seção da página', [['Filled', '6 ícones'], ['Social', '1 ícone'], ['Outline', '140 ícones'], ['Times de futebol', '167 ícones'], ['Bandeiras de países', '268 ícones']])] },
+
+{ id: 'icone-com-descricao', n: 'Ícone com descrição', lv: 'a', fg: '9-1005', s: '1 componente · 3 variantes · tokens da coleção Semantic',
+  v: [B('Icon description', '3 variantes · Cor: Sunny, Neutral Lightest, Grass Greener', [['Cor: Sunny', '111 × 18 px · fundo: transparente · texto: color/feedback/danger'], ['Cor: Neutral Lightest', '111 × 18 px · fundo: transparente · texto: color/text/on-action'], ['Cor: Grass Greener', '111 × 18 px · fundo: transparente · texto: color scheme/brand/summer/grass-greener']])],
+  p: [B('Icon description', '', [['Ícone', 'Booleana. Padrão: ligado.'], ['Ícone escolhido', 'Troca de instância.'], ['Cor', 'Variante. Opções: Sunny, Neutral Lightest, Grass Greener.']])],
+  a: [B('Icon description', ANAT, [['Dimensões', '111 × 18 px'], ['Layout', 'Horizontal · padding 0 nos 4 lados px · gap 4 (spacing/2xsm) px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Icon · Description']])] },
+
+{ id: 'ilustracao', n: 'Ilustração', lv: 'a', fg: '1316-879', s: '1 componente · 22 variantes · tokens da coleção Semantic',
+  v: [B('Ilustrações', '22 variantes', [['Desenho', 'Música boa, Lugar confortável, Bebida boa, Cerveja trincando, Comida boa, Comida vegana, Dança, Casal, LGBT, Amigos, Ambiente seguro, Cadeira de rodas, Ambiente aberto, Com estacionamento, Pet friendly, Ambiente climatizado, Rooftop, Bar raíz, Drinks autorais, Achado do rolê, Novo, Barato']])],
+  p: [B('Ilustrações', '', [['Desenho', 'Variante. Opções: as 22 ilustrações listadas em Variantes e estados.']])],
+  a: [B('Ilustrações', ANAT, [['Dimensões', '96 × 80 px'], ['Camadas', 'Vector (várias)']])] },
+
+{ id: 'input', n: 'Input', lv: 'a', fg: '9-998', s: '2 componentes · 5 variantes · tokens da coleção Semantic',
+  v: [B('Busca', '2 variantes · State: _default, _active · Habilitado: True', [['_default', '256 × 53 px · fundo: color/bg/surface · texto: color/text/secondary · borda: color/border/default'], ['_active', '256 × 53 px · fundo: color/bg/surface · texto: color/text/primary · borda: color/border/default']]), B('Text', '3 variantes · State: _default, _active, _error', [['_default', '256 × 81 px · texto: color/text/secondary'], ['_active', '256 × 81 px · texto: color/text/primary'], ['_error', '256 × 81 px · texto e borda: Sunset/500']])],
+  p: [B('Busca', '', [['Icon-right', 'Troca de instância.'], ['Icon-right2', 'Booleana. Padrão: ligado.'], ['State', 'Variante. Opções: _default, _active.'], ['Habilitado', 'Variante. Opções: True.']]), B('Text', '', [['Icon-left', 'Booleana. Padrão: ligado.'], ['Icon-right', 'Booleana. Padrão: ligado.'], ['Descrição', 'Booleana. Padrão: ligado.'], ['Icon-left-escolhido', 'Troca de instância.'], ['Icon-right-escolhido', 'Troca de instância.'], ['State', 'Variante. Opções: _default, _active, _error.']])],
+  a: [B('Busca', ANAT, [['Dimensões', '256 × 53 px'], ['Layout', 'Horizontal · padding 16 nos 4 lados px · gap 16 px'], ['Raio', '1000 (radius/pill) px'], ['Borda', '1 px · color/border/default'], ['Tipografia', 'Descrição/Grande'], ['Camadas', 'Search Icon · Placeholder Text · Close Icon']]), B('Text', ANAT, [['Dimensões', '256 × 81 px'], ['Layout', 'Vertical · padding 0 nos 4 lados px · gap 4 (spacing/2xsm) px'], ['Raio', '4 (radius/4xsm) px'], ['Tipografia', 'Corpo de texto/Pequeno/Regular · Descrição/Grande'], ['Camadas', 'Input field · Description']])] },
+
+{ id: 'link', n: 'Link', lv: 'a', fg: '9-1003', s: '1 componente · 1 variante · tokens da coleção Semantic',
+  v: [B('Link', 'componente único', [['Padrão', '86 × 18 px · fundo: transparente · texto: color/action/primary']])],
+  p: [B('Link', '', [['Ícone', 'Booleana. Padrão: ligado.'], ['Ícone escolhido', 'Troca de instância.']])],
+  a: [B('Link', ANAT, [['Dimensões', '86 × 18 px'], ['Layout', 'Horizontal · padding 0 nos 4 lados px · gap 8 px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Text · Icon']])] },
+
+{ id: 'loading', n: 'Loading', lv: 'a', fg: '103-18', s: '1 componente · 4 variantes · tokens da coleção Semantic',
+  v: [B('Loader', '4 variantes · Estado: 1, 2, 3, 4', [['Estado: 1', '64 × 64 px · fundo: transparente'], ['Estado: 2', '64 × 64 px · fundo: transparente'], ['Estado: 3', '64 × 64 px · fundo: transparente'], ['Estado: 4', '64 × 64 px · fundo: transparente']])],
+  p: [B('Loader', '', [['Estado', 'Variante. Opções: 1, 2, 3, 4.']])],
+  a: [B('Loader', ANAT, [['Dimensões', '64 × 64 px'], ['Camadas', 'Load']])] },
+
+{ id: 'logo', n: 'Logo', lv: 'a', fg: '9-1006', s: '2 componentes · 9 variantes · tokens da coleção Semantic',
+  v: [B('Rolê Agora/Logomarca', '3 variantes · Cor: Preta, Branca, Colorida', [['Cor: Colorida', '72 × 72 px'], ['Cor: Branca', '72 × 72 px'], ['Cor: Preta', '72 × 72 px']]), B('Rolê Agora/Logotipo', '6 variantes · Tipo: Inline, 2 linhas · Cor: Colorido, Branco, Preto', [['2 linhas', '200 × 72 px'], ['Inline', '200 × 40 px']])],
+  p: [B('Rolê Agora/Logomarca', '', [['Cor', 'Variante. Opções: Preta, Branca, Colorida.']]), B('Rolê Agora/Logotipo', '', [['Tipo', 'Variante. Opções: Inline, 2 linhas.'], ['Cor', 'Variante. Opções: Colorido, Branco, Preto.']])],
+  a: [B('Rolê Agora/Logomarca', ANAT, [['Dimensões', '72 × 72 px'], ['Camadas', 'Group']]), B('Rolê Agora/Logotipo', ANAT, [['Dimensões', '200 × 40–72 px (varia entre variantes)'], ['Camadas', 'Vector']])] },
+
+{ id: 'tag', n: 'Tag', lv: 'a', fg: '9-1001', s: '1 componente · 1 variante · tokens da coleção Semantic',
+  v: [B('Tag', '1 variante · Icone: True', [['Icone: True', '57 × 26 px · fundo: color scheme/brand/autumn/twilight-lightest · texto: color/action/primary']])],
+  p: [B('Tag', '', [['Ícone escolhido', 'Troca de instância.'], ['Icone', 'Variante. Opções: True.']])],
+  a: [B('Tag', ANAT, [['Dimensões', '57 × 26 px'], ['Layout', 'Horizontal · padding T/D/B/E 4 (spacing/2xsm) / 8 (spacing/xsm) / 4 (spacing/2xsm) / 8 (spacing/xsm) px · gap 4 (spacing/2xsm) px'], ['Raio', '4 (radius/4xsm) px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Icon · Tag Text']])] },
+
+{ id: 'popover', n: 'Popover', lv: 'a', fg: '116-10', s: '1 componente · 3 variantes · tokens da coleção Semantic',
+  v: [B('Popover', '3 variantes · Tipo: Neutro, Sucesso, Aviso', [['Neutro', '111 × 56 px · fundo: #1a1a1a (sem token) 80% · texto: color/text/on-action'], ['Sucesso', '123 × 56 px · fundo: color scheme/brand/summer/grass-greener · texto: color/text/on-action'], ['Aviso', '104 × 56 px · fundo: Sunset/500 · texto: color/text/on-action']])],
+  p: [B('Popover', '', [['Tipo', 'Variante. Opções: Neutro, Sucesso, Aviso.']])],
+  a: [B('Popover', ANAT, [['Dimensões', '104–123 × 56 px (varia entre variantes)'], ['Layout', 'Horizontal · padding 16 (spacing/sm) nos 4 lados px · gap 8 (spacing/xsm) px'], ['Raio', '8 (radius/3xsm) px'], ['Tipografia', 'Corpo de texto/Pequeno'], ['Camadas', 'Checkmark · Neutral Text']])] },
+
+/* ================= MOLÉCULAS ================= */
+{ id: 'accordion', n: 'Accordion', lv: 'm', fg: '91-36', s: '3 componentes · 6 variantes · tokens da coleção Semantic',
+  v: [B('Item', '4 variantes · Último item: False, True · Expandido: False, True', [['Último item: False · Expandido: False', '360 × 48 px · texto: color/text/secondary'], ['Último item: False · Expandido: True', '360 × 529 px · texto: color/text/secondary'], ['Último item: True · Expandido: False', '360 × 24 px · texto: color/text/secondary'], ['Último item: True · Expandido: True', '360 × 529 px · texto: color/text/secondary']]), B('Accordion', 'componente único', [['Padrão', '312 × 312 px · texto: color/text/secondary']]), B('Content', 'componente único', [['Padrão', '360 × 481 px · texto: color/text/primary']])],
+  p: [B('Item', '', [['Último item', 'Variante. Opções: False, True.'], ['Expandido', 'Variante. Opções: False, True.']])],
+  a: [B('Item', ANAT, [['Dimensões', '360 × 24–529 px (varia entre variantes)'], ['Layout', 'Vertical · padding 0 nos 4 lados px · gap 24 (spacing/m) px'], ['Tipografia', 'Mobile/Título/H6'], ['Camadas', 'Header · Divisória']]), B('Accordion', ANAT, [['Dimensões', '312 × 312 px'], ['Layout', 'Vertical · padding 0 nos 4 lados px · gap 24 (spacing/m) px'], ['Camadas', 'Item (5×)']]), B('Content', ANAT, [['Dimensões', '360 × 481 px'], ['Tipografia', 'Mobile/Título/H6 · Corpo de texto/Pequeno/Regular · Descrição/Grande'], ['Camadas', 'Divisória · Frame 1']])] },
+
+{ id: 'adsense', n: 'Adsense', lv: 'm', fg: '438-125', s: '1 componente · 16 variantes · tokens da coleção Semantic',
+  v: [B('Molécula/Seção', '16 variantes · Resolução: Desktop, Mobile · Inverted: True, False · Dimensões: 300x250, Retângulo médio, Leaderboard móvel, Banner móvel grande, Quadrado, Quadrado pequeno, Leaderboard grande, Retângulo grande, Meia página, Arranha-céu largo, Banner', [['Leaderboard grande', '970 × 124 px'], ['Retângulo médio', '300 × 284 px'], ['Retângulo grande', '336 × 314 px'], ['Arranha-céu largo', '160 × 634 px'], ['Banner', '468 × 94 px'], ['Quadrado', '250 × 284 px'], ['Quadrado pequeno', '200 × 234 px'], ['Meia página', '300 × 634 px'], ['Inverted: True', 'texto: color/text/on-action'], ['Inverted: False', 'texto: color/text/secondary']])],
+  p: [B('Molécula/Seção', '', [['Resolução', 'Variante. Opções: Desktop, Mobile.'], ['Inverted', 'Variante. Opções: True, False.'], ['Dimensões', 'Variante. Opções: 300x250, Retângulo médio, Leaderboard móvel, Banner móvel grande, Quadrado, Quadrado pequeno, Leaderboard grande, Retângulo grande, Meia página, Arranha-céu largo, Banner.']])],
+  a: [B('Molécula/Seção', ANAT, [['Dimensões', '160–970 × 50–634 px (varia entre variantes)'], ['Layout', 'Vertical · padding 0 nos 4 lados px · gap 16 (spacing/sm) px'], ['Tipografia', 'Sobrancelha · Mobile/Título/H5'], ['Camadas', 'Continua depois do anúncio · Banner']])] },
+
+{ id: 'avaliacoes', n: 'Avaliações', lv: 'm', fg: '9-1253', s: '1 componente · 5 variantes · tokens da coleção Semantic',
+  v: [B('Avaliações', '5 variantes · Resolução: Mobile · Avaliação: Excelente, Bom, Neutro, Ruim, Péssimo', [['Excelente · Bom · Neutro · Ruim · Péssimo', '296 × 79 px · fundo: transparente · texto: color/text/primary']])],
+  p: [B('Avaliações', '', [['Resolução', 'Variante. Opções: Mobile.'], ['Avaliação', 'Variante. Opções: Excelente, Bom, Neutro, Ruim, Péssimo.']])],
+  a: [B('Avaliações', ANAT, [['Dimensões', '296 × 79 px'], ['Layout', 'Horizontal · padding 0 nos 4 lados px · gap 24 (spacing/m) px'], ['Tipografia', 'Mobile/Título/H6 · Mobile/Subtítulo/Grande · Descrição/Pequena'], ['Camadas', 'Ícone · Content']])] },
+
+{ id: 'banner', n: 'Banner', lv: 'm', fg: '353-1735', s: '1 componente · 3 variantes · tokens da coleção Semantic',
+  v: [B('Molécula/Banner', '3 variantes · Estado: Sem localização, Com cidade, Perto de mim', [['Sem localização', '312 × 186 px · fundo: color/bg/surface · texto: color/text/primary'], ['Com cidade', '312 × 189 px · fundo: gradiente #411c62 → #0e0e4e (sem token) · texto: #ffffff (sem token)'], ['Perto de mim', '312 × 189 px · fundo: gradiente #411c62 → #0e0e4e (sem token) · texto: #ffffff (sem token)']])],
+  p: [B('Molécula/Banner', '', [['Estado', 'Variante. Opções: Sem localização, Com cidade, Perto de mim.']])],
+  a: [B('Molécula/Banner', ANAT, [['Dimensões', '312 × 186–189 px (varia entre variantes)'], ['Layout', 'Vertical · padding 24 nos 4 lados px · gap 16 px'], ['Raio', '16 (radius/xsm) px'], ['Tipografia', 'Mobile/Título/H5 · Descrição/Grande'], ['Camadas', 'Frame 9 · Primary/Default']])] },
+
+{ id: 'breadcrumb', n: 'Breadcrumb', lv: 'm', fg: '237-369', s: '2 componentes · 3 variantes · tokens da coleção Semantic',
+  v: [B('Átomo/Item', '2 variantes · Final: True, False', [['Final: True', '62 × 18 px · texto: color scheme/neutral/dark'], ['Final: False', '86 × 18 px · texto: color scheme/neutral/dark']]), B('Molécula/Breadcrumb', 'componente único', [['Padrão', '360 × 50 px · fundo: color/bg/subtle · texto: color scheme/neutral/dark']])],
+  p: [B('Átomo/Item', '', [['Final', 'Variante. Opções: True, False.']]), B('Molécula/Breadcrumb', '', [['Passo 2', 'Booleana. Padrão: ligado.'], ['Passo 3', 'Booleana. Padrão: ligado.']])],
+  a: [B('Átomo/Item', ANAT, [['Dimensões', '62–86 × 18 px (varia entre variantes)'], ['Layout', 'Horizontal · padding 0 nos 4 lados px · gap 0 px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Link']]), B('Molécula/Breadcrumb', ANAT, [['Dimensões', '360 × 50 px'], ['Layout', 'Horizontal · padding T/D/B/E 16 (spacing/sm) / 24 (spacing/m) / 16 (spacing/sm) / 24 (spacing/m) px · gap 8 (spacing/xsm) px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Bar e Lugares/casa · Átomo/Item (3×)']])] },
+
+{ id: 'card', n: 'Card', lv: 'm', fg: '9-1023', s: '5 componentes · 15 variantes · tokens da coleção Semantic',
+  v: [B('Estabelecimento', '4 variantes · Resolução: Mobile, Desktop · Listagem: Horizontal, Vertical', [['Vertical', '312 × 187 px · fundo: imagem + gradiente (sem token) · texto: Dawn/500'], ['Horizontal', '200 × 256 px · fundo: imagem + gradiente (sem token) · texto: Dawn/500']]), B('Artista', '6 variantes · Resolução: Mobile, Desktop · Listagem: Vertical, Horizontal · Highlight: False, True', [['Mobile · Vertical', '312 × 326 px · fundo: imagem + gradiente (sem token) · texto: Dawn/500'], ['Mobile · Horizontal', '200 × 252 px'], ['Desktop · Horizontal', '288 × 256 px'], ['Highlight: True', 'borda: color/feedback/danger']]), B('Product card', 'componente único', [['Padrão', '200 × 235 px · texto: Dawn/500']]), B('Small', 'componente único', [['Padrão', '120 × 152 px · texto: color/text/on-action']]), B('Pricing action', '3 variantes · Preço: Grátis, Fixo, Lote', [['Grátis · Fixo', '101 × 37 px'], ['Lote', '101 × 59 px · texto: color/text/on-action']])],
+  p: [B('Estabelecimento', '', [['Badge', 'Booleana. Padrão: ligado.'], ['Resolução', 'Variante. Opções: Mobile, Desktop.'], ['Listagem', 'Variante. Opções: Horizontal, Vertical.']]), B('Artista', '', [['Badge', 'Booleana. Padrão: ligado.'], ['Blur', 'Booleana. Padrão: desligado.'], ['Brasão futebol', 'Booleana. Padrão: ligado.'], ['Balão', 'Booleana. Padrão: desligado.'], ['Resolução', 'Variante. Opções: Mobile, Desktop.'], ['Listagem', 'Variante. Opções: Vertical, Horizontal.'], ['Highlight', 'Variante. Opções: False, True.']]), B('Product card', '', [['Desconto', 'Booleana. Padrão: ligado.']]), B('Small', '', [['Blur', 'Booleana. Padrão: ligado.']]), B('Pricing action', '', [['Preço', 'Variante. Opções: Grátis, Fixo, Lote.']])],
+  a: [B('Estabelecimento', ANAT, [['Dimensões', '200–312 × 187–256 px (varia entre variantes)'], ['Layout', 'Horizontal · padding 24 (spacing/m) nos 4 lados px · gap 24 (spacing/m) px'], ['Raio', '16 (radius/xsm) px'], ['Tipografia', 'Descrição/Pequena · Corpo de texto/Grande · Descrição/Grande'], ['Camadas', 'Content Container · Pricing action']]), B('Artista', ANAT, [['Dimensões', '200–312 × 252–326 px (varia entre variantes)'], ['Raio', '16 px'], ['Tipografia', 'Descrição/Pequena · Mobile/Título/H6 · Corpo de texto/Pequeno · Descrição/Grande'], ['Camadas', 'Átomo/Badge · Brasão de time container · Event Info · Blur overlay · Dialog']]), B('Product card', ANAT, [['Dimensões', '200 × 235 px'], ['Layout', 'Vertical · padding 0 · gap 8 (spacing/xsm) px'], ['Tipografia', 'Descrição/Pequena · Corpo de texto/Pequeno · Mobile/Título/H5'], ['Camadas', 'Header · Product details']]), B('Small', ANAT, [['Dimensões', '120 × 152 px'], ['Layout', 'Vertical · padding 0 · gap 4 px'], ['Raio', '8 (radius/3xsm) px'], ['Tipografia', 'Descrição/Pequena · Mobile/Título/H6'], ['Camadas', 'Image · Container']]), B('Pricing action', ANAT, [['Dimensões', '101 × 37–59 px (varia entre variantes)'], ['Tipografia', 'Descrição/Grande'], ['Camadas', 'Primary/Default']])] },
+
+{ id: 'faq', n: 'FAQ', lv: 'm', fg: '302-792', s: '1 componente · 2 variantes · tokens da coleção Semantic',
+  v: [B('Molécula/FAQ', '2 variantes · Resolução: Mobile, Desktop', [['Mobile', '360 × 581 px · fundo: color/bg/subtle · texto: #000000 (sem token)'], ['Desktop', '1440 × 504 px · fundo: color/bg/subtle · texto: color/text/primary']])],
+  p: [B('Molécula/FAQ', '', [['Resolução', 'Variante. Opções: Mobile, Desktop.']])],
+  a: [B('Molécula/FAQ', ANAT, [['Dimensões', '360–1440 × 504–581 px (varia entre variantes)'], ['Layout', 'Vertical · padding T/D/B/E 64 (spacing/4xlg) / 24 (spacing/m) / 64 (spacing/4xlg) / 24 (spacing/m) px · gap 32 (spacing/lg) px'], ['Tipografia', 'Mobile/Título/H3 · Corpo de texto/Pequeno/Regular · Mobile/Título/H6'], ['Camadas', 'Título + descrição · Accordion']])] },
+
+{ id: 'header', n: 'Header', lv: 'm', fg: '9-1254', s: '1 componente · 6 variantes · tokens da coleção Semantic',
+  v: [B('Molécula/Página', '6 variantes · Resolução: Mobile, Desktop · Tipo: Estabelecimento, Evento, Artista', [['Mobile', '360 × 392 px · fundo: imagem + gradiente (sem token)'], ['Desktop', '708 × 904 px · fundo: imagem + gradiente (sem token) · texto: color scheme/neutral/lightest-faded 80%']])],
+  p: [B('Molécula/Página', '', [['Botão', 'Booleana. Padrão: ligado.'], ['Resolução', 'Variante. Opções: Mobile, Desktop.'], ['Tipo', 'Variante. Opções: Estabelecimento, Evento, Artista.']])],
+  a: [B('Molécula/Página', ANAT, [['Dimensões', '360–708 × 392–904 px (varia entre variantes)'], ['Layout', 'Vertical · padding T/D/B/E 24 / 24 / 40 / 24 px · gap 24 px'], ['Tipografia', 'Descrição/Pequena · Mobile/Título/H3 · Descrição/Grande · Mobile/Título/H6'], ['Camadas', 'Frame 234 · Container · Event details']])] },
+
+{ id: 'list', n: 'List', lv: 'm', fg: '1245-3958', s: '2 componentes · 3 variantes · tokens da coleção Semantic',
+  v: [B('List item', '2 variantes · Tipo: Evento, Data', [['Evento', '312 × 90 px · texto: color scheme/neutral/dark'], ['Data', '312 × 90 px · texto: color/text/secondary']]), B('List image', 'componente único', [['Padrão', '88 × 90 px']])],
+  p: [B('List item', '', [['Tipo', 'Variante. Opções: Evento, Data.']])],
+  a: [B('List item', ANAT, [['Dimensões', '312 × 90 px'], ['Layout', 'Horizontal · padding 0 · gap 16 (spacing/sm) px'], ['Tipografia', 'Descrição/Pequena · Corpo de texto/Pequeno/Semi bold'], ['Camadas', 'List image · Sobrancelha + Título + Descrição']]), B('List image', ANAT, [['Dimensões', '88 × 90 px'], ['Camadas', 'Rectangle 5']])] },
+
+{ id: 'menu', n: 'Menu', lv: 'm', fg: '457-184', s: '3 componentes · 6 variantes · tokens da coleção Semantic',
+  v: [B('Sidebar', '2 variantes · Logado: False, True', [['Logado: False', '360 × 827 px · fundo: color/bg/surface · texto: color/text/on-action'], ['Logado: True', '360 × 934 px · fundo: color/bg/surface · texto: color/text/on-action']]), B('Top bar', 'componente único', [['Padrão', '360 × 56 px · fundo: #05051c (sem token) 16%']]), B('Profile picture sidebar menu', '3 variantes · Logado: False, True · VIP: False, True', [['Logado · VIP', '133 × 165 px'], ['Logado', '312 × 223 px'], ['Visitante', '206 × 149 px']])],
+  p: [B('Sidebar', '', [['Logado', 'Variante. Opções: False, True.']]), B('Profile picture sidebar menu', '', [['Logado', 'Variante. Opções: False, True.'], ['VIP', 'Variante. Opções: False, True.']])],
+  a: [B('Sidebar', ANAT, [['Dimensões', '360 × 827–934 px (varia entre variantes)'], ['Layout', 'Vertical · padding 24 nos 4 lados px · gap 40 (spacing/xlg) px'], ['Tipografia', 'Mobile/Título/H6 · Corpo de texto/Pequeno/Regular · Descrição/Grande · Descrição/Pequena'], ['Camadas', 'Header image · Header · Profile picture sidebar menu · Busca · Menu items']]), B('Top bar', ANAT, [['Dimensões', '360 × 56 px'], ['Camadas', 'Botões de Controle/menu · Rolê Agora/Logotipo · Control buttons container']]), B('Profile picture sidebar menu', ANAT, [['Dimensões', '133–312 × 149–223 px (varia entre variantes)'], ['Layout', 'Vertical · padding 0 · gap 8 (spacing/xsm) px'], ['Tipografia', 'Descrição/Pequena · Mobile/Título/H5'], ['Camadas', 'Group 19 · Frame 380']])] },
+
+{ id: 'pagination', n: 'Pagination', lv: 'm', fg: '423-10', s: '2 componentes · 5 variantes · tokens da coleção Semantic',
+  v: [B('Átomos/Dot', '4 variantes · Checked: True, False · Inverted: True, False', [['Checked: True', '16 × 16 px'], ['Checked: False', '8 × 8 px']]), B('Moléculas/Pagination dot', 'componente único', [['Padrão', '112 × 16 px']])],
+  p: [B('Átomos/Dot', '', [['Checked', 'Variante. Opções: True, False.'], ['Inverted', 'Variante. Opções: True, False.']])],
+  a: [B('Átomos/Dot', ANAT, [['Dimensões', '8–16 × 8–16 px (varia entre variantes)']]), B('Moléculas/Pagination dot', ANAT, [['Dimensões', '112 × 16 px'], ['Layout', 'Horizontal · padding 0 · gap 16 (spacing/sm) px'], ['Camadas', 'Átomos/Dot (5×)']])] },
+
+{ id: 'switcher', n: 'Switcher', lv: 'm', fg: '9-999', s: '1 componente · 1 variante · tokens da coleção Semantic',
+  v: [B('Switcher', '1 variante · Primeiro checked: True', [['Primeiro checked: True', '174 × 42 px · fundo: color scheme/brand/autumn/twilight-lightest · texto: color/text/on-action']])],
+  p: [B('Switcher', '', [['Primeiro checked', 'Variante. Opções: True.']])],
+  a: [B('Switcher', ANAT, [['Dimensões', '174 × 42 px'], ['Layout', 'Horizontal · padding 4 (spacing/2xsm) nos 4 lados px · gap 8 px'], ['Raio', '1000 (radius/pill) px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Carrossel de filtros']])] },
+
+{ id: 'tab', n: 'Tab', lv: 'm', fg: '9-1022', s: '2 componentes · 3 variantes · tokens da coleção Semantic',
+  v: [B('Tab List', 'componente único', [['Padrão', '202 × 33 px · fundo: transparente · texto: color/action/primary · borda: color/text/secondary']]), B('Tab', '2 variantes · Checked: True, False', [['Checked: True', '101 × 33 px · texto: color/action/primary'], ['Checked: False', '101 × 29 px · texto: color/text/secondary']])],
+  p: [B('Tab', '', [['Ícone', 'Troca de instância.'], ['Checked', 'Variante. Opções: True, False.']])],
+  a: [B('Tab List', ANAT, [['Dimensões', '202 × 33 px'], ['Layout', 'Horizontal · padding 0 · gap 0 px'], ['Borda', 'color/text/secondary'], ['Tipografia', 'Descrição/Grande'], ['Camadas', 'Tab · Tab']]), B('Tab', ANAT, [['Dimensões', '101 × 29–33 px (varia entre variantes)'], ['Layout', 'Vertical · padding 0 · gap 4 (spacing/2xsm) px'], ['Tipografia', 'Descrição/Grande'], ['Camadas', 'Item Container · Vector 1']])] },
+
+{ id: 'tabela', n: 'Tabela', lv: 'm', fg: '9-1252', s: '1 componente · 2 variantes · tokens da coleção Semantic',
+  v: [B('Horário de funcionamento', '2 variantes · Resolução: Mobile, Desktop', [['Mobile', '312 × 168 px · fundo: color/bg/subtle · texto: color/text/primary'], ['Desktop', '496 × 168 px · fundo: color/bg/subtle · texto: color/text/primary']])],
+  p: [B('Horário de funcionamento', '', [['Resolução', 'Variante. Opções: Mobile, Desktop.']])],
+  a: [B('Horário de funcionamento', ANAT, [['Dimensões', '312–496 × 168 px (varia entre variantes)'], ['Layout', 'Horizontal · padding 24 nos 4 lados px · gap 16 (spacing/sm) px'], ['Raio', '24 (radius/m) px'], ['Tipografia', 'Corpo de texto/Pequeno'], ['Camadas', 'Day List · Vector 10 · Container']])] },
+
+/* ================= ORGANISMOS ================= */
+{ id: 'carrossel', n: 'Carrossel', lv: 'o', fg: '9-1278', s: '1 componente · 5 variantes · tokens da coleção Semantic',
+  v: [B('Carrossel de cards', '5 variantes · Tipo de card: Artista, Estabelecimento, Evento geral, Futebol, Promoções', [['Estabelecimento · Artista · Futebol', '1064 × 252 px · texto: Dawn/500'], ['Evento geral · Promoções', '1064 × 255 px · texto: Dawn/500']])],
+  p: [B('Carrossel de cards', '', [['Tipo de card', 'Variante. Opções: Artista, Estabelecimento, Evento geral, Futebol, Promoções.']])],
+  a: [B('Carrossel de cards', ANAT, [['Dimensões', '1064 × 252–255 px (varia entre variantes)'], ['Layout', 'Horizontal · padding 0 · gap 16 px'], ['Tipografia', 'Descrição/Pequena · Corpo de texto/Pequeno/Semi bold'], ['Camadas', 'Event Card (5×)']])] },
+
+{ id: 'drawer', n: 'Drawer', lv: 'o', fg: '9-1251', s: '10 componentes · 30 variantes · tokens da coleção Semantic',
+  v: [B('Status', '6 variantes · Estado: Carregando, Sucesso, Erro · Resolução: Mobile, Desktop', [['Carregando', '360 × 242 px (mobile) · 600 × 248 px (desktop) · fundo: #ffffff (sem token)'], ['Sucesso', '360 × 362 px (mobile) · 600 × 256 px (desktop) · fundo: color/bg/surface'], ['Erro', '360 × 466 px (mobile) · 600 × 336 px (desktop) · fundo: color/bg/surface']]), B('Habilitar localização', 'componente único', [['Padrão', '360 × 556 px · fundo: color/bg/surface · texto: color/text/primary']]), B('Bullet Information', 'componente único', [['Padrão', '144 × 39 px · texto: color/text/secondary']]), B('Botão de compra', '2 variantes · Estado: Default, Você vai!', [['Default', '144 × 53 px'], ['Você vai!', '144 × 53 px · texto: color/text/on-action']])],
+  p: [B('Status', '', [['Estado', 'Variante. Opções: Carregando, Sucesso, Erro.'], ['Resolução', 'Variante. Opções: Mobile, Desktop.']]), B('Botão de compra', '', [['Estado', 'Variante. Opções: Default, Você vai!.']]), B('Preço', '', [['Valor', 'Variante. Opções: Fixo, Grátis, Lote.']]), B('Header', '', [['Tocando agora', 'Booleana. Padrão: ligado.'], ['Resolução', 'Variante. Opções: Mobile, Desktop.'], ['Persona', 'Variante. Opções: Artista, Estabelecimento, Cidade, Evento.']])],
+  a: [B('Status', ANAT, [['Dimensões', '360–600 × 242–466 px (varia entre variantes)'], ['Layout', 'Vertical · padding T/D/B/E 64 / 24 / 64 / 24 px · gap 24 (spacing/m) px'], ['Raio', 'misto (radius/m) px'], ['Tipografia', 'Mobile/Título/H4'], ['Camadas', 'Loader · Carregando...']]), B('Habilitar localização', ANAT, [['Dimensões', '360 × 556 px'], ['Layout', 'Vertical · padding T/D/B/E 64 / 24 / 64 (spacing/4xlg) / 24 px · gap 24 px'], ['Raio', 'misto (radius/m) px'], ['Tipografia', 'Mobile/Título/H4 · Corpo de texto/Pequeno · Descrição/Grande'], ['Camadas', 'Descrição da banda · fechar · Action container']]), B('Bullet Information', ANAT, [['Dimensões', '144 × 39 px'], ['Layout', 'Horizontal · padding 0 · gap 8 (spacing/xsm) px'], ['Tipografia', 'Descrição/Pequena · Corpo de texto/Pequeno/Regular']]), B('Botão de compra', ANAT, [['Dimensões', '144 × 53 px'], ['Tipografia', 'Descrição/Grande'], ['Camadas', 'Primary/Default']])] },
+
+{ id: 'modal', n: 'Modal', lv: 'o', fg: '141-342', s: '3 componentes · 4 variantes · tokens da coleção Semantic',
+  v: [B('Átomos/Botão de ação', '2 variantes · Estado: Agendar, Ver ingressos', [['Agendar', '128 × 53 px · texto: color/text/on-action'], ['Ver ingressos', '128 × 53 px']]), B('Moléculas/Action container', 'componente único', [['Padrão', '264 × 53 px · texto: color scheme/brand/summer/twilight']]), B('Ticket de resumo da compra', 'componente único', [['Padrão', '312 × 609 px · texto: color/text/primary']])],
+  p: [B('Átomos/Botão de ação', '', [['Estado', 'Variante. Opções: Agendar, Ver ingressos.']])],
+  a: [B('Átomos/Botão de ação', ANAT, [['Dimensões', '128 × 53 px'], ['Tipografia', 'Descrição/Grande'], ['Camadas', 'Primary/Default']]), B('Moléculas/Action container', ANAT, [['Dimensões', '264 × 53 px'], ['Layout', 'Horizontal · padding 0 · gap 8 (spacing/xsm) px'], ['Camadas', 'Secondary/Default · Átomos/Botão de ação']]), B('Ticket de resumo da compra', ANAT, [['Dimensões', '312 × 609 px'], ['Layout', 'Vertical · padding 24 nos 4 lados px · gap 24 (spacing/m) px'], ['Raio', '24 (radius/m) px'], ['Tipografia', 'Corpo de texto/Pequeno/Regular · Mobile/Título/H4 · Descrição/Pequena · Mobile/Título/H6'], ['Camadas', 'Background · Content Container · Location Container · Divisória · Action Container']])] },
+
+{ id: 'footer', n: 'Footer', lv: 'o', fg: '9-1261', s: '1 componente · 2 variantes · tokens da coleção Semantic',
+  v: [B('Footer', '2 variantes · Resolução: Desktop, Mobile', [['Mobile', '360 × 447 px · texto: color scheme/neutral/dark'], ['Desktop', '1440 × 283 px · texto: color scheme/neutral/dark']])],
+  p: [B('Footer', '', [['Resolução', 'Variante. Opções: Desktop, Mobile.']])],
+  a: [B('Footer', ANAT, [['Dimensões', '360–1440 × 283–447 px (varia entre variantes)'], ['Layout', 'Vertical · padding 0 · gap 0 px'], ['Tipografia', 'Descrição/Pequena · Cabin Bold 12px · Descrição/Grande'], ['Camadas', 'Breadcrumb · Content container']])] },
+];
+const DOCS_BY_ID = Object.fromEntries(DOCS.map(d => [d.id, d]));
+const LEVELS = [['a', 'Átomos', 'ÁTOMO'], ['m', 'Moléculas', 'MOLÉCULA'], ['o', 'Organismos', 'ORGANISMO']];
+
+/* Botão — conteúdo de diretrizes e Do & Don't (documento do Figma) */
+const BTN_GUIDE = [
+  ['Sale', 'Máx. 1 por tela (inclusive em drawers/overlays; uso nunca simultâneo). Exclusivo para conversões críticas, como assinaturas e cadastro principal.'],
+  ['Primary', 'Representa a única ação principal da tela; proibido usar 2 botões Primary adjacentes.'],
+  ['Grupos de ação', 'Ação positiva principal à direita (ou no topo, no mobile); ação secundária ou cancelamento à esquerda (ou abaixo), usando Secondary ou Ghost.'],
+  ['Clareza da ação', 'O rótulo deve descrever a ação real do usuário; são proibidos termos genéricos, como "Clique aqui".'],
+  ['Extensão', 'Máximo de 3 palavras, salvo exceções nominais indispensáveis.'],
+  ['Formatação', 'Proibida a quebra de linha.'],
+  ['Capitalização', 'Sentence case estrito (só a primeira letra maiúscula), exceto siglas e nomes próprios. Ex.: "Finalizar compra".'],
+];
+const BTN_DOS = [
+  { ok: [['Continuar', 'primary']], okT: 'Um único Primary por tela, reservado para a ação principal.', no: [['Cancelar', 'primary'], ['Confirmar', 'primary']], noT: 'Dois Primary adjacentes: a hierarquia entre as ações se perde.' },
+  { ok: [['Assinar agora', 'sale']], okT: 'Um único Sale por tela, reservado a conversões críticas, como assinatura ou cadastro.', no: [['Assinar agora', 'sale'], ['Cadastrar', 'sale']], noT: 'Mais de um Sale na mesma tela, inclusive entre página e drawer.' },
+  { ok: [['Cancelar', 'secondary'], ['Confirmar', 'primary']], okT: 'Ação principal à direita (ou no topo, no mobile); secundária à esquerda (ou abaixo).', no: [['Confirmar', 'primary'], ['Cancelar', 'secondary']], noT: 'Ordem invertida: a ação principal fica à esquerda.' },
+  { ok: [['Ver ingressos', 'primary']], okT: 'Rótulo que descreve a ação real, com no máximo 3 palavras.', no: [['Clique aqui', 'primary']], noT: 'Termo genérico, que não diz o que vai acontecer.' },
+  { ok: [['Finalizar compra', 'primary']], okT: 'Sentence case: só a primeira letra maiúscula.', no: [['Finalizar Compra', 'primary']], noT: 'Todas as palavras em maiúscula inicial.' },
+];
+const BTN_SIZES_DOC = [
+  ['LG', '53 px (Sale: 56 px)', '16 px vertical · 24 px horizontal', 'Inter Bold 14 px (Sale: 16 px)', 'spacing/sm · spacing/m'],
+  ['MD', '45 px', '12 px vertical (sem token) · 24 px horizontal', 'Inter Bold 14 px', 'spacing/m'],
+  ['SM', '37 px', '8 px vertical · 16 px horizontal', 'Inter Bold 14 px', 'spacing/xsm · spacing/sm'],
+];
+const BTN_STATES_DOC = [
+  ['Normal', 'cor da variante'],
+  ['Hover', 'overlay preto 20% (Primary e Soft); 40% (Sale, Sucesso e contornos). Primary/Inverse e Ghost usam color/bg/subtle'],
+  ['Pressionado', 'overlay preto 40%. Primary/Inverse e Ghost usam color/border/default'],
+  ['Desabilitado', 'opacidade 32% (Primary/Inverse: 64%)'],
+];
+
+/* Tipografia */
+const TYPE_RULES = [
+  'Sobrancelha não pode ter cores de ação: use apenas cores neutras, como color/text/primary, color/text/secondary e color/text/on-action.',
+  'Não pode haver mais de 80 caracteres por linha de texto.',
+  'O line-height de corpo de texto para baixo deve ser 1,5 (150%), por acessibilidade.',
+  'A fonte jamais deve ser menor do que 12 px/pt.',
+  'A base de cálculo para rem é 16 px.',
+];
+const TYPE_STYLES = [
+  ['Sobrancelha', 'Inter Bold', 12, '150%', 'eyebrow', 'font-bold uppercase', 'SOBRANCELHA'],
+  ['Desktop/Título/H1', 'Montserrat Bold', 46, '130%', 'h1', 'font-display font-bold', 'Título H1'],
+  ['Desktop/Título/H2', 'Montserrat Bold', 32, '130%', 'h2', 'font-display font-bold', 'Título H2'],
+  ['Desktop/Título/H3', 'Montserrat Bold', 28, '130%', 'h3', 'font-display font-bold', 'Título H3'],
+  ['Desktop/Título/H4', 'Montserrat Bold', 25, '130%', 'h4', 'font-display font-bold', 'Título H4'],
+  ['Desktop/Título/H5', 'Montserrat Bold', 22, '130%', 'h5', 'font-display font-bold', 'Título H5'],
+  ['Desktop/Título/H6', 'Montserrat Bold', 20, '130%', 'h6', 'font-display font-bold', 'Título H6'],
+  ['Mobile/Título/H1', 'Montserrat Bold', 32, '130%', 'h1-m', 'font-display font-bold', 'Título H1'],
+  ['Mobile/Título/H2', 'Montserrat Bold', 25, '130%', 'h2-m', 'font-display font-bold', 'Título H2'],
+  ['Mobile/Título/H3', 'Montserrat Bold', 22, '130%', 'h3-m', 'font-display font-bold', 'Título H3'],
+  ['Mobile/Título/H4', 'Montserrat Bold', 20, '130%', 'h4-m', 'font-display font-bold', 'Título H4'],
+  ['Mobile/Título/H5', 'Montserrat Bold', 18, '130%', 'h5-m', 'font-display font-bold', 'Título H5'],
+  ['Mobile/Título/H6', 'Montserrat Bold', 16, '130%', 'h6-m', 'font-display font-bold', 'Título H6'],
+  ['Corpo de texto/Grande/Regular', 'Inter Regular', 18, '150%', 'body-lg', '', 'Corpo de texto grande'],
+  ['Corpo de texto/Grande/Semi bold', 'Inter Semi Bold', 18, '150%', 'body-lg', 'font-semibold', 'Corpo de texto grande'],
+  ['Corpo de texto/Pequeno/Regular', 'Inter Regular', 16, '150%', 'body', '', 'Corpo de texto pequeno'],
+  ['Corpo de texto/Pequeno/Semi bold', 'Inter Semi Bold', 16, '150%', 'body', 'font-semibold', 'Corpo de texto pequeno'],
+  ['Descrição/Grande', 'Inter Regular', 14, '150%', 'desc-lg', '', 'Descrição grande'],
+  ['Descrição/Pequena', 'Inter Regular', 12, '150%', 'desc', '', 'Descrição pequena'],
+];
+/* Grids */
+const GRIDS = [
+  { nome: 'Desktop', tela: '1366 px a 1440 px', cols: 12, w: 80, gap: 24, total: 1224 },
+  { nome: 'Mobile', tela: '360 px', cols: 6, w: 32, gap: 24, total: 312 },
+];
+
+/* ===== Storybook Huszár DS — aplicação ===== */
+const FIGMA_FILE = 'https://www.figma.com/design/VYcfKzEO4wq1HtC63I7Xsn/Husz%C3%A1r-DS';
+const $ = s => document.querySelector(s);
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const CODE_STORE = {}; let codeSeq = 0;
+const storeCode = t => { const id = 'c' + (++codeSeq); CODE_STORE[id] = t; return id; };
+
+/* ---------- Rotas / navegação ---------- */
+const FOUNDATIONS = [['cores', 'Cores'], ['tipografia', 'Tipografia'], ['grids', 'Grids']];
+const ROUTES = new Set(['inicio', ...DOCS.map(d => d.id), ...FOUNDATIONS.map(f => f[0])]);
+let current = 'botao';
+let navFilter = '';
+
+function navItem(id, label) {
+  const on = id === current;
+  return `<button data-nav="${id}" class="flex w-full items-center rounded-pill px-sm py-xsm text-left text-desc-lg ${on ? 'bg-bg-brand-subtle font-bold text-action-primary' : 'text-text-primary hover:bg-bg-subtle'} focus-visible:outline focus-visible:outline-2 focus-visible:outline-text-primary" ${on ? 'aria-current="page"' : ''}>${label}</button>`;
+}
+function renderSidebar() {
+  const q = norm(navFilter);
+  const match = label => !q || norm(label).includes(q);
+  let h = `<div class="flex flex-col gap-2xsm">${match('Primeiros passos') ? navItem('inicio', 'Primeiros passos') : ''}</div>`;
+  let comp = '';
+  LEVELS.forEach(([lv, label]) => {
+    const items = DOCS.filter(d => d.lv === lv && match(d.n));
+    if (!items.length) return;
+    comp += `<div class="flex flex-col gap-2xsm"><p class="px-sm pt-xsm text-desc font-semibold text-text-secondary">${label}</p>${items.map(d => navItem(d.id, d.n)).join('')}</div>`;
+  });
+  if (comp) h += `<div class="flex flex-col gap-sm"><p class="px-sm text-eyebrow font-bold uppercase text-text-secondary">Componentes</p>${comp}</div>`;
+  const f = FOUNDATIONS.filter(x => match(x[1]));
+  if (f.length) h += `<div class="flex flex-col gap-2xsm"><p class="px-sm text-eyebrow font-bold uppercase text-text-secondary">Foundations</p>${f.map(x => navItem(x[0], x[1])).join('')}</div>`;
+  if (!comp && !f.length && !match('Primeiros passos')) h = `<p class="px-sm text-desc-lg text-text-secondary">Nada encontrado para “${esc(navFilter)}”.</p>`;
+  $('#nav').innerHTML = h;
+}
+
+function go(id, opts) {
+  if (!ROUTES.has(id)) id = 'botao';
+  current = id;
+  try { history.replaceState(null, '', '#' + id); } catch (e) { /* sandbox */ }
+  renderSidebar(); renderPage();
+  closeMenu();
+  if (!opts || !opts.keepScroll) { $('#main').scrollTo({ top: 0 }); }
+  document.title = (id === 'inicio' ? 'Primeiros passos' : (DOCS_BY_ID[id] ? DOCS_BY_ID[id].n : (FOUNDATIONS.find(f => f[0] === id) || [0, ''])[1])) + ' · Huszár DS';
+}
+function openMenu() { $('#sidebar').classList.remove('-translate-x-full'); $('#scrim').classList.remove('hidden'); }
+function closeMenu() { $('#sidebar').classList.add('-translate-x-full'); $('#scrim').classList.add('hidden'); }
+
+/* ---------- Utilidades de UI ---------- */
+function legacyMark(t) {
+  return esc(t).replace(/(color scheme\/[\w\-\/]+|#[0-9a-fA-F]{3,8} \(sem token\)|(?:imagem \+ )?gradiente[^·]*?\(sem token\)|#[0-9a-fA-F]{6} → #[0-9a-fA-F]{6}( \(sem token\))?)/g, '<span class="rounded-4xsm bg-feedback-danger-subtle px-2xsm text-sunset-500" title="Token legado ou valor sem token: ainda será migrado no Figma">$1</span>');
+}
+const H2 = t => `<h2 class="font-display text-h3-m font-bold text-text-primary md:text-h3">${t}</h2>`;
+const section = (title, body, id) => `<section ${id ? `id="${id}"` : ''} class="flex flex-col gap-m">${H2(title)}<div class="h-px bg-border-strong"></div><div class="flex flex-col gap-2xlg pt-m">${body}</div></section>`;
+const grid2 = items => `<div class="grid grid-cols-1 gap-x-6xlg gap-y-2xlg lg:grid-cols-2">${items.join('')}</div>`;
+const blockHead = (t, d) => `<div class="flex flex-col gap-2xsm"><h3 class="font-display text-h6-m font-bold text-text-primary md:text-h6">${esc(t)}</h3>${d ? `<p class="text-desc text-text-secondary">${esc(d)}</p>` : ''}</div>`;
+function rowsBlock(b, mark) {
+  return `<div class="flex min-w-0 flex-col gap-lg">${blockHead(b.b, b.h)}<div class="flex flex-col gap-lg">${b.r.map(([a, d]) => `<div class="flex flex-col gap-2xsm"><p class="text-body text-text-primary">${esc(a)}</p><p class="text-desc text-text-secondary">${mark ? legacyMark(d) : esc(d)}</p></div>`).join('')}</div></div>`;
+}
+const placeholder = t => `<div class="rounded-xsm border border-dashed border-border-strong bg-bg-subtle p-m text-desc-lg text-text-secondary">${t}</div>`;
+const card = (inner, cls = '') => `<div class="rounded-xsm bg-bg-surface p-m ${cls}">${inner}</div>`;
+
+function copyBtn(codeId, label = 'Copiar') {
+  return `<button type="button" data-copy="${codeId}" class="inline-flex items-center gap-2xsm rounded-pill bg-neutral-800 px-sm py-2xsm text-desc font-bold text-neutral-100 hover:bg-neutral-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-neutral-50 [&>svg]:h-4 [&>svg]:w-4">${svg('check').replace(/<path d="M20 6 9 17l-5-5"\/>/, '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>')}<span>${label}</span></button>`;
+}
+function hl(code) {
+  return esc(code).replace(/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)|(&lt;\/?[A-Za-z][\w.-]*)|\b(import|from|export|const|let|function|return|default|module|true|false|null)\b/g,
+    (m, c, s, t, k) => c ? `<span class="tk-c">${c}</span>` : s ? `<span class="tk-s">${s}</span>` : t ? `<span class="tk-t">${t}</span>` : `<span class="tk-k">${k}</span>`);
+}
+function codeBlock(code, label) {
+  const id = storeCode(code);
+  return `<div class="overflow-hidden rounded-xsm bg-neutral-900"><div class="flex items-center justify-between gap-sm px-sm py-xsm">${label ? `<span class="text-desc font-semibold text-neutral-300">${label}</span>` : '<span></span>'}${copyBtn(id)}</div><pre class="code max-h-[28rem] overflow-auto px-sm pb-sm text-desc leading-relaxed text-neutral-100"><code>${hl(code)}</code></pre></div>`;
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) {
+    try { const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0;top:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (e2) { return false; }
+  }
+}
+const swatch = (css, cls = 'h-8 w-16') => `<span class="inline-block ${cls} shrink-0 rounded-3xsm border border-border-default" style="background:var(${css})"></span>`;
+const table = (heads, rows, widths) => `<div class="overflow-x-auto"><table class="w-full min-w-[640px] border-collapse text-left"><thead><tr>${heads.map(h => `<th class="border-b border-border-default py-sm pr-sm text-eyebrow font-bold uppercase text-text-secondary">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="border-b border-border-default py-sm pr-sm align-middle ${i === 0 ? 'text-body text-text-primary' : 'text-desc text-text-secondary'}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+
+/* ---------- Playground ---------- */
+const pgState = {};
+let codeTab = 'uso';
+const STAGES = { light: 'border border-border-default bg-bg-surface', gray: 'border border-border-default bg-bg-subtle', dark: 'bg-text-primary' };
+function pgGet(id) { if (!pgState[id]) { const s = { stage: null }; PG[id].controls.forEach(c => s[c.k] = c.def); pgState[id] = s; } return pgState[id]; }
+const stageOf = id => pgState[id].stage || PG[id].stage(pgState[id]);
+
+function controlHtml(c, s) {
+  const v = s[c.k];
+  let inner;
+  if (c.type === 'select') inner = `<select data-pg-set="${c.k}" class="w-full rounded-pill border border-border-default bg-bg-surface px-sm py-xsm text-desc-lg text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-text-primary">${c.opts.map(([val, l]) => `<option value="${val}" ${val === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  else if (c.type === 'seg') inner = `<div class="inline-flex flex-wrap gap-2xsm rounded-pill bg-bg-subtle p-2xsm" role="radiogroup" aria-label="${c.label}">${c.opts.map(([val, l]) => `<button type="button" role="radio" aria-checked="${val === v}" data-pg-set="${c.k}" data-v="${val}" class="rounded-pill px-sm py-2xsm text-desc ${val === v ? 'bg-bg-surface font-bold text-action-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'} focus-visible:outline focus-visible:outline-2 focus-visible:outline-text-primary">${l}</button>`).join('')}</div>`;
+  else if (c.type === 'bool') inner = `<button type="button" role="switch" aria-checked="${!!v}" aria-label="${c.label}" data-pg-toggle="${c.k}" class="relative inline-flex h-6 w-11 items-center rounded-pill ${v ? 'bg-action-primary' : 'bg-border-strong'} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"><span class="inline-block h-4 w-4 rounded-pill bg-bg-surface transition-transform ${v ? 'translate-x-6' : 'translate-x-1'}"></span></button>`;
+  else inner = `<input type="text" data-pg-text="${c.k}" value="${escA(v)}" class="w-full rounded-pill border border-border-default bg-bg-surface px-sm py-xsm text-desc-lg text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-text-primary">`;
+  return `<div class="flex min-w-0 flex-col gap-xsm"><label class="text-eyebrow font-bold uppercase text-text-secondary">${c.label}</label>${inner}</div>`;
+}
+function pgPreview(id) {
+  const d = PG[id], s = pgState[id];
+  return `<div class="flex min-h-[180px] items-center justify-center overflow-auto rounded-xsm p-xlg ${STAGES[stageOf(id)]}" data-pg-stage>${renderPreview(d.tree(s, true))}</div>`;
+}
+function pgGallery(id) {
+  const d = PG[id]; if (!d.gallery) return '';
+  const c = d.controls.find(x => x.k === d.gallery);
+  const items = c.opts.map(([val, l]) => {
+    const s2 = Object.assign({}, pgState[id], { [d.gallery]: val }, d.galleryApply ? d.galleryApply(pgState[id], val) : {});
+    const st = pgState[id].stage || d.stage(s2);
+    return `<div class="flex flex-col items-center gap-xsm"><div class="flex min-h-[72px] min-w-[128px] items-center justify-center rounded-xsm p-sm ${STAGES[st]}">${renderPreview(d.tree(s2, true))}</div><span class="text-desc text-text-secondary">${l}</span></div>`;
+  });
+  return `<div class="flex flex-col gap-sm"><p class="text-eyebrow font-bold uppercase text-text-secondary">Todas as opções de ${c.label.toLowerCase()}</p><div class="flex flex-wrap gap-sm">${items.join('')}</div></div>`;
+}
+function pgCode(id) {
+  const d = PG[id], s = pgState[id];
+  const tabs = [['uso', 'React · uso'], ['comp', 'React · componente'], ['html', 'HTML + Tailwind']];
+  const code = codeTab === 'uso' ? d.usage(s) : codeTab === 'comp' ? d.source() : toHTML(d.tree(s, false));
+  const label = codeTab === 'comp' ? d.file : codeTab === 'html' ? 'Estado atual do playground' : 'Reflete as opções escolhidas acima';
+  return `<div class="flex flex-col gap-sm"><div class="inline-flex flex-wrap gap-2xsm self-start rounded-pill bg-bg-subtle p-2xsm" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" aria-selected="${k === codeTab}" data-code-tab="${k}" class="rounded-pill px-sm py-2xsm text-desc ${k === codeTab ? 'bg-bg-surface font-bold text-action-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'} focus-visible:outline focus-visible:outline-2 focus-visible:outline-text-primary">${l}</button>`).join('')}</div>${codeBlock(code, label)}<p class="text-desc text-text-secondary">Os exemplos usam as classes do tema do DS (tokens). Ainda não configurou o Tailwind? Veja <button type="button" data-nav="inicio" class="font-bold text-action-primary hover:underline">Primeiros passos</button>.</p></div>`;
+}
+function renderPlayground(id) {
+  const d = PG[id]; const s = pgGet(id);
+  const stageBtns = [['', 'Auto'], ['light', 'Claro'], ['gray', 'Cinza'], ['dark', 'Escuro']].map(([k, l]) => `<button type="button" data-pg-stage="${k}" aria-pressed="${(s.stage || '') === k}" class="rounded-pill px-sm py-2xsm text-desc ${(s.stage || '') === k ? 'bg-bg-surface font-bold text-action-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}">${l}</button>`).join('');
+  return `<div id="pg" data-id="${id}" class="flex flex-col gap-m">
+    ${card(`<div class="flex flex-col gap-m"><div class="flex flex-wrap items-center justify-between gap-sm"><div class="flex flex-col gap-2xsm"><h2 class="font-display text-h6-m font-bold text-text-primary md:text-h6">Playground</h2><p class="text-desc text-text-secondary">Altere as opções para ver o componente em cada estado.</p></div><div class="inline-flex gap-2xsm rounded-pill bg-bg-subtle p-2xsm" aria-label="Fundo do preview">${stageBtns}</div></div>
+    <div id="pg-preview">${pgPreview(id)}</div>
+    <div id="pg-controls" class="grid grid-cols-1 gap-m sm:grid-cols-2 lg:grid-cols-3">${d.controls.map(c => controlHtml(c, s)).join('')}</div>
+    <div id="pg-gallery">${pgGallery(id)}</div></div>`)}
+    ${card(`<div id="pg-code">${pgCode(id)}</div>`)}
+  </div>`;
+}
+function pgRefresh(full) {
+  const root = $('#pg'); if (!root) return; const id = root.dataset.id; const d = PG[id], s = pgState[id];
+  $('#pg-preview').innerHTML = pgPreview(id); $('#pg-gallery').innerHTML = pgGallery(id); $('#pg-code').innerHTML = pgCode(id);
+  if (full) $('#pg-controls').innerHTML = d.controls.map(c => controlHtml(c, s)).join('');
+}
+
+/* ---------- Páginas de componente ---------- */
+function btnEl(label, variant, size = 'md', state = 'normal') { const s = { variant, size, state, label, leading: '', trailing: '' }; return renderPreview(btnTree(s, true)); }
+
+function botaoSpecs() {
+  const states = [['normal', 'Normal'], ['hover', 'Hover'], ['pressed', 'Pressionado'], ['disabled', 'Desabilitado']];
+  const matrix = `<div class="overflow-x-auto"><div class="grid min-w-[760px] grid-cols-[160px_repeat(4,1fr)] items-center gap-y-xsm"><div></div>${states.map(([, l]) => `<p class="pb-sm text-eyebrow font-bold uppercase text-text-secondary">${l}</p>`).join('')}${Object.keys(BTN).map(v => {
+    const dark = v.endsWith('inverse');
+    return `<p class="py-sm pr-sm text-body text-text-primary">${BTN[v].l}</p>${states.map(([st]) => `<div class="flex items-center py-sm ${dark ? 'rounded-3xsm bg-text-primary px-sm' : ''}">${btnEl('Ver ingressos', v, 'md', st)}</div>`).join('')}`;
+  }).join('')}</div></div>`;
+  const sizes = table(['Tamanho', 'Altura', 'Padding', 'Rótulo', 'Tokens'], BTN_SIZES_DOC);
+  const st = table(['Estado', 'Tratamento'], BTN_STATES_DOC);
+  const d = DOCS_BY_ID.botao;
+  return [
+    section('Variantes e estados', `${matrix}${grid2([`<div class="flex flex-col gap-lg">${blockHead('Tamanhos', 'ícone 16 × 16 px · espaço ícone–rótulo 4 px (spacing/2xsm) · raio pill (radius/pill) · altura de linha 150%')}${sizes}</div>`, `<div class="flex flex-col gap-lg">${blockHead('Estados', 'aplicados sobre a cor de cada variante')}${st}</div>`])}`),
+    section('Propriedades', grid2(d.p.map(b => rowsBlock(b)))),
+    section('Anatomia', grid2(d.a.map(b => rowsBlock(b)))),
+    section('Diretrizes de uso', `<div class="flex flex-col gap-lg">${blockHead('Variantes e hierarquia', '')}</div>${grid2(BTN_GUIDE.map(([a, b]) => `<div class="flex flex-col gap-2xsm"><p class="text-body text-text-primary">${a}</p><p class="max-w-prose text-desc-lg text-text-secondary">${esc(b)}</p></div>`))}`),
+    section("Do & Don't", BTN_DOS.map(p => grid2([doCard(true, p.ok, p.okT), doCard(false, p.no, p.noT)])).join('')),
+  ].join('');
+}
+function doCard(ok, btns, text) {
+  const dark = false;
+  const icon = ok ? svg('check') : svg('x');
+  return `<div class="flex min-w-0 flex-col gap-sm"><div class="flex flex-wrap items-center justify-center gap-sm rounded-xsm bg-bg-subtle p-xlg ${ok ? 'border-b-4 border-feedback-success' : 'border-b-4 border-feedback-danger'}">${btns.map(([l, v]) => btnEl(l, v)).join('')}</div><div class="flex items-start gap-xsm"><span class="mt-2xsm shrink-0 ${ok ? 'text-feedback-success' : 'text-feedback-danger'} [&>svg]:h-4 [&>svg]:w-4">${icon}</span><p class="text-desc-lg text-text-primary"><strong>${ok ? 'Faça' : 'Não faça'}.</strong> ${esc(text)}</p></div></div>`;
+}
+function iconeSpecs(d) {
+  const groups = SEM_GROUPS.find(g => g[1] === 'icon')[2];
+  const rows = semList.filter(s => s.group === 'icon').map(s => [`<span class="flex items-center gap-sm">${swatch(s.css, 'h-6 w-10')}<span class="text-body text-text-primary">${s.name}</span></span>`, `var(${s.css})`, s.ref.startsWith('color/') ? s.ref : s.ref, s.hex]);
+  return [section('Catálogo', grid2(d.x.map(b => rowsBlock(b)))), section('Cores de ícone', `${blockHead('Família color/icon/*', 'ícones usam tokens próprios, separados dos de texto')}${table(['Token', 'Variável CSS', 'Referência', 'Hex'], rows)}`)].join('');
+}
+function genericSpecs(d) {
+  const out = [];
+  if (d.v) out.push(section('Variantes e estados', grid2(d.v.map(b => rowsBlock(b, true)))));
+  if (d.p) out.push(section('Propriedades', grid2(d.p.map(b => rowsBlock(b)))));
+  if (d.a) out.push(section('Anatomia', grid2(d.a.map(b => rowsBlock(b, true)))));
+  out.push(section('Diretrizes de uso', placeholder('As diretrizes deste componente (quando usar, quando não usar, acessibilidade e conteúdo) serão definidas na próxima etapa.')));
+  out.push(section("Do & Don't", placeholder('Os exemplos de boas práticas e do que evitar serão adicionados na próxima etapa.')));
+  return out.join('');
+}
+function renderComponent(id) {
+  const d = DOCS_BY_ID[id]; const lv = LEVELS.find(l => l[0] === d.lv);
+  const head = `<header class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">${lv[2]}</p><h1 class="font-display text-h1-m font-bold text-text-primary md:text-h1">${d.n}</h1><div class="flex flex-wrap items-center gap-x-m gap-y-2xsm"><p class="text-desc text-text-secondary">${d.s}</p><a href="${FIGMA_FILE}?node-id=${d.fg}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-xsm text-desc text-action-primary hover:underline [&>svg]:h-4 [&>svg]:w-4">Abrir no Figma ${svg('chevron-right')}</a></div></header>`;
+  const pg = PG[id] ? renderPlayground(id) : card(`<div class="flex items-start gap-sm"><span class="text-icon-brand [&>svg]:h-4 [&>svg]:w-4">${svg('star')}</span><p class="text-desc-lg text-text-secondary">O playground interativo deste componente (estados e código React e Tailwind) chega na próxima etapa. Enquanto isso, consulte abaixo as especificações do Figma.</p></div>`);
+  const specs = d.custom ? botaoSpecs() : d.icons ? iconeSpecs(d) : genericSpecs(d);
+  return `<div class="flex flex-col gap-6xlg">${head}${pg}${specs}</div>`;
+}
+
+/* ---------- Foundations ---------- */
+const SEM_DESC = {
+  bg: [['O que é', 'Cores de superfície. Definem o plano de fundo da página e das áreas que se sobrepõem a ele.'], ['Quando usar', 'page para o fundo geral da tela; surface para cartões, modais, drawers e qualquer área elevada sobre a página; subtle para áreas de apoio, como tabelas e blocos secundários; brand-subtle para fundos suaves com a cor da marca, como seções de destaque.'], ['Onde usar', 'Frames de página, Card, Modal, Drawer e Tabela.'], ['Evite', 'Usar cores de fundo como cor de texto ou ícone, e aplicar os primitivos Neutral diretamente.']],
+  text: [['O que é', 'Cores de texto. Garantem hierarquia e contraste de leitura sobre os fundos.'], ['Quando usar', 'primary para títulos e corpo de texto; secondary para descrições, legendas e Sobrancelha; on-action para texto sobre fundos de ação ou escuros.'], ['Onde usar', 'Títulos, parágrafos, rótulos de botões e descrições.'], ['Evite', 'Sobrancelha com cores de ação, texto com contraste abaixo de 4,5:1 e cores de ícone aplicadas em texto.']],
+  border: [['O que é', 'Cores de contorno e divisão. Separam elementos sem competir com o conteúdo.'], ['Quando usar', 'default para divisores e contornos de cartões e campos em repouso; strong quando a separação precisa de mais ênfase, como os divisores de seção.'], ['Onde usar', 'Card, divisores, Input e Tabela.'], ['Evite', 'Usar cores de borda em texto ou ícone, e bordas de ação em elementos que não são interativos.']],
+  action: [['O que é', 'Cor da marca aplicada à interação. Indica o que o usuário pode clicar.'], ['Quando usar', 'primary para a ação principal (botões Primary, texto e borda do Secondary, links); primary-hover para o estado hover de elementos primary; primary-subtle para fundos suaves de destaque, como um item selecionado.'], ['Onde usar', 'Botão, Link e demais elementos interativos.'], ['Evite', 'Aplicar em elementos decorativos ou não clicáveis, e usar duas ações Primary adjacentes.']],
+  feedback: [['O que é', 'Cores de status. Comunicam sucesso, erro, atenção e informação.'], ['Quando usar', 'success, danger, warning e info para texto, borda e ícone do status; as versões -subtle para o fundo de mensagens, alertas e badges do mesmo status.'], ['Onde usar', 'Alertas, mensagens de formulário, badges e tags de status.'], ['Evite', 'Usar como cor decorativa ou de marca. Texto de status sobre fundo -subtle pode ficar abaixo de 4,5:1; verifique o contraste ou use text/primary.']],
+  icon: [['O que é', 'Cores específicas para ícones, separadas das de texto para permitir ajustes independentes.'], ['Quando usar', 'default para ícones comuns; secondary para ícones de apoio; disabled para estados desabilitados; on-action sobre fundos de ação; brand para destaque da marca; success, danger, warning e info para status.'], ['Onde usar', 'Ícone, Ícone com descrição e ícones dentro de Botão e Input.'], ['Evite', 'Usar cores color/text/* em ícones, e cores color/icon/* em texto.']],
+};
+function copyChip(text, display) { const id = storeCode(text); return `<button type="button" data-copy="${id}" title="Copiar ${escA(text)}" class="rounded-4xsm px-2xsm text-left font-mono text-desc text-text-secondary hover:bg-bg-subtle hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-text-primary">${display || esc(text)}</button>`; }
+function renderCores() {
+  const fams = [...new Set(primList.map(p => p.fam))];
+  const prim = fams.map(f => `<div class="flex flex-col gap-m">${blockHead(f, `${primList.filter(p => p.fam === f).length} ${primList.filter(p => p.fam === f).length > 1 ? 'tons' : 'tom'} · coleção Primitive`)}<div class="flex flex-wrap gap-xsm">${primList.filter(p => p.fam === f).map(p => `<div class="flex w-[117px] flex-col gap-xsm"><span class="h-16 w-full rounded-3xsm border border-border-default" style="background:var(${p.css})"></span><span class="text-body text-text-primary">${p.step}</span>${copyChip(p.hex, p.hex)}</div>`).join('')}</div></div>`).join('');
+  const sem = SEM_GROUPS.map(([label, key, items]) => {
+    const list = semList.filter(s => s.group === key);
+    const desc = `<div class="flex flex-col gap-sm">${SEM_DESC[key].map(([a, b]) => `<div class="flex flex-col gap-2xsm md:flex-row md:gap-m"><p class="shrink-0 text-eyebrow font-bold uppercase text-text-secondary md:w-40">${a}</p><p class="max-w-[640px] text-body text-text-primary">${esc(b)}</p></div>`).join('')}</div>`;
+    return `<div class="flex flex-col gap-m">${blockHead(label, `${list.length} tokens · color/${key}/*`)}${desc}${table(['Amostra', 'Token', 'Variável CSS', 'Referência', 'Hex'], list.map(s => [swatch(s.css), `${esc(s.name)}`, copyChip(`var(${s.css})`), esc(s.ref.replace('color/', 'color/')), s.hex]))}</div>`;
+  }).join('');
+  return `<div class="flex flex-col gap-6xlg"><header class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">FUNDAMENTO</p><h1 class="font-display text-h1-m font-bold text-text-primary md:text-h1">Cores</h1><p class="text-desc text-text-secondary">${primList.length + semList.length} tokens de cor · ${primList.length} primitivos (coleção Primitive) · ${semList.length} semânticos (coleção Semantic). Clique em um valor para copiá-lo.</p></header>
+  ${section('Tokens primitivos', `<p class="max-w-[640px] text-desc-lg text-text-secondary">Valores brutos da paleta, organizados por família e escala. Não são usados diretamente nos componentes: os tokens semânticos apontam para eles.</p>${prim}`)}
+  ${section('Tokens semânticos', `<p class="max-w-[640px] text-desc-lg text-text-secondary">Tokens com função definida. São os únicos que os componentes devem usar; cada um aponta para um token primitivo.</p>${sem}`)}</div>`;
+}
+function renderTipografia() {
+  const rows = TYPE_STYLES.map(([n, font, px, lh, cls, extra, sample]) => [`<span class="${extra} text-${cls} text-text-primary" style="${cls === 'eyebrow' ? 'color:var(--color-text-secondary)' : ''}">${sample}</span>`, esc(n), esc(font), `${px} px · ${(px / 16).toString().replace('.', ',')} rem`, lh, copyChip(`text-${cls}${extra ? ' ' + extra : ''}`)]);
+  return `<div class="flex flex-col gap-6xlg"><header class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">FUNDAMENTO</p><h1 class="font-display text-h1-m font-bold text-text-primary md:text-h1">Tipografia</h1><p class="text-desc text-text-secondary">${TYPE_STYLES.length} estilos · Inter e Montserrat · base de cálculo para rem: 16 px</p></header>
+  ${section('Diretrizes', `<ul class="flex max-w-[640px] flex-col gap-sm">${TYPE_RULES.map(r => `<li class="flex gap-sm text-body text-text-primary"><span class="mt-2xsm shrink-0 text-icon-brand [&>svg]:h-4 [&>svg]:w-4">${svg('check')}</span><span>${esc(r)}</span></li>`).join('')}</ul>`)}
+  ${section('Estilos de texto', `${blockHead('Estilos, valores em rem e classes Tailwind', 'clique na classe para copiar · títulos usam font-display (Montserrat), o restante usa Inter')}${table(['Amostra', 'Estilo', 'Fonte', 'Tamanho', 'Line-height', 'Classe Tailwind'], rows)}`)}</div>`;
+}
+function gridViz(g) {
+  const cols = Array.from({ length: g.cols }, () => `<span class="block shrink-0 bg-action-primary" style="width:${g.w}px;height:24px"></span>`).join('');
+  return `<div class="overflow-x-auto rounded-xsm bg-bg-subtle py-m"><div class="mx-auto flex w-max flex-col gap-xsm px-sm"><div class="relative h-8 text-desc text-text-secondary" style="width:${g.total}px">${[[0, g.w, g.w + 'px'], [g.w, g.gap, g.gap + 'px']].map(([x, w, l]) => `<span class="absolute top-0 flex -translate-x-1/2 flex-col items-center gap-2xsm" style="left:${x + w / 2}px"><span>${l}</span><span class="relative block h-2 border-b border-text-secondary" style="width:${w}px"><i class="absolute left-0 top-0 h-2 w-px bg-text-secondary"></i><i class="absolute right-0 top-0 h-2 w-px bg-text-secondary"></i></span></span>`).join('')}</div><div class="flex" style="gap:${g.gap}px">${cols}</div></div></div>`;
+}
+function renderGrids() {
+  const blocks = GRIDS.map(g => {
+    const css = g.nome === 'Desktop' ? `grid grid-cols-[repeat(12,80px)] gap-m` : `grid grid-cols-[repeat(6,32px)] gap-m`;
+    const snippet = `<div className="${css}">\n  {/* ${g.cols} colunas de ${g.w}px, com ${g.gap}px entre elas */}\n</div>`;
+    return section('Grid ' + g.nome, `${blockHead(g.nome, `tela de ${g.tela} · ${g.cols} colunas · ${g.w} px de largura cada · ${g.gap} px de distância entre elas (spacing/m)`)}${gridViz(g)}${grid2([`<div class="flex flex-col gap-lg">${blockHead('Especificações', '')}${[[g.cols + ' colunas', 'quantidade de colunas'], [g.w + ' px', 'largura de cada coluna'], [g.gap + ' px', 'espaço entre colunas (gutter) · spacing/m'], [g.total + ' px', `largura total do grid · ${g.cols} × ${g.w} px + ${g.cols - 1} × ${g.gap} px`], [g.tela, 'largura de tela de referência']].map(([a, b]) => `<div class="flex flex-col gap-2xsm"><p class="text-body text-text-primary">${a}</p><p class="text-desc text-text-secondary">${b}</p></div>`).join('')}</div>`, `<div class="flex flex-col gap-lg">${blockHead('Código', 'grid fixo com Tailwind')}${codeBlock(snippet, 'React + Tailwind')}</div>`])}`);
+  }).join('');
+  const cmp = section('Comparativo', table(['Propriedade', 'Desktop', 'Mobile'], [['Largura de tela', GRIDS[0].tela, GRIDS[1].tela], ['Colunas', '12', '6'], ['Largura da coluna', '80 px', '32 px'], ['Gutter', '24 px (spacing/m)', '24 px (spacing/m)'], ['Largura total do grid', '1224 px', '312 px']]));
+  return `<div class="flex flex-col gap-6xlg"><header class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">FUNDAMENTO</p><h1 class="font-display text-h1-m font-bold text-text-primary md:text-h1">Grids</h1><p class="text-desc text-text-secondary">2 grids · Desktop e Mobile · colunas na cor color/action/primary · gutter com token da coleção Semantic</p></header>${blocks}${cmp}</div>`;
+}
+function renderInicio() {
+  const fonts = '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">';
+  const usage = '<button className="rounded-pill bg-action-primary px-m py-sm text-desc-lg font-bold text-text-on-action">\n  Ver ingressos\n</button>';
+  const ref = table(['Categoria', 'Prefixos', 'Exemplos'], [['Cor', 'bg- · text- · border- · ring-', 'bg-bg-surface · text-text-secondary · border-border-default · ring-action-primary'], ['Primitivos', 'família-escala', 'bg-twilight-500 · text-dawn-500 · bg-neutral-100'], ['Spacing', 'p- · m- · gap-', 'p-m · gap-xsm · px-sm · py-2xsm'], ['Raio', 'rounded-', 'rounded-pill · rounded-xsm · rounded-4xsm'], ['Tipografia', 'text-', 'text-h1 · text-body · text-desc-lg · font-display'], ['Variáveis CSS', 'var(--…)', 'var(--color-text-primary) · var(--spacing-m) · var(--radius-pill)']]);
+  return `<div class="flex flex-col gap-6xlg"><header class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">COMEÇAR</p><h1 class="font-display text-h1-m font-bold text-text-primary md:text-h1">Primeiros passos</h1><p class="max-w-[640px] text-desc-lg text-text-secondary">O Huszár DS é o sistema de design da Rolê Agora. Os componentes deste Storybook usam apenas tokens: configure o tema uma vez e copie o código de cada componente.</p></header>
+  ${section('1. Fontes', `<p class="max-w-[640px] text-desc-lg text-text-secondary">O DS usa Inter (texto) e Montserrat (títulos). Adicione ao <code>head</code> do app:</p>${codeBlock(fonts, 'HTML')}`)}
+  ${section('2. Tema do Tailwind', `<p class="max-w-[640px] text-desc-lg text-text-secondary">Cole as cores, os espaçamentos, os raios e os tamanhos de fonte do DS no <code>tailwind.config.js</code>. As classes dos exemplos dependem dele.</p>${codeBlock(buildTwConfig(), 'tailwind.config.js')}`)}
+  ${section('3. Variáveis CSS', `<p class="max-w-[640px] text-desc-lg text-text-secondary">O tema usa estas variáveis. Inclua o arquivo no CSS global do app.</p>${codeBlock(buildCss(), 'tokens.css')}`)}
+  ${section('4. Usar os tokens', `<p class="max-w-[640px] text-desc-lg text-text-secondary">Os nomes das classes seguem os nomes dos tokens do Figma.</p>${codeBlock(usage, 'React + Tailwind')}${ref}`)}</div>`;
+}
+
+function renderPage() {
+  const el = $('#page');
+  el.innerHTML = current === 'inicio' ? renderInicio() : current === 'cores' ? renderCores() : current === 'tipografia' ? renderTipografia() : current === 'grids' ? renderGrids() : renderComponent(current);
+}
+
+/* ---------- Eventos ---------- */
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-nav],[data-copy],[data-pg-set],[data-pg-toggle],[data-code-tab],[data-pg-stage],[data-set],[data-toggle],[data-noop],#menuBtn,#scrim');
+  if (!t) return;
+  if (t.hasAttribute('data-nav')) return go(t.dataset.nav);
+  if (t.id === 'menuBtn') return openMenu();
+  if (t.id === 'scrim') return closeMenu();
+  if (t.hasAttribute('data-copy')) {
+    const ok = await copyText(CODE_STORE[t.dataset.copy]);
+    const span = t.querySelector('span') || t; const old = span.innerHTML;
+    span.textContent = ok ? 'Copiado!' : 'Selecione e copie'; setTimeout(() => { span.innerHTML = old; }, 1400);
+    return;
+  }
+  if (t.hasAttribute('data-noop')) return e.preventDefault();
+  const root = $('#pg'); if (!root) return;
+  const id = root.dataset.id, s = pgState[id], d = PG[id];
+  if (t.hasAttribute('data-pg-set') && t.tagName === 'BUTTON') { s[t.dataset.pgSet] = t.dataset.v; if (d.onChange) d.onChange(s, t.dataset.pgSet); return pgRefresh(true); }
+  if (t.hasAttribute('data-pg-toggle')) { s[t.dataset.pgToggle] = !s[t.dataset.pgToggle]; return pgRefresh(true); }
+  if (t.hasAttribute('data-code-tab')) { codeTab = t.dataset.codeTab; return pgRefresh(false); }
+  if (t.hasAttribute('data-pg-stage')) { s.stage = t.dataset.pgStage || null; root.querySelectorAll('[data-pg-stage]').forEach(b => { const on = (b.dataset.pgStage || '') === (s.stage || ''); b.setAttribute('aria-pressed', on); b.className = `rounded-pill px-sm py-2xsm text-desc ${on ? 'bg-bg-surface font-bold text-action-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`; }); return pgRefresh(false); }
+  if (t.hasAttribute('data-set') && !t.disabled) { const [k, v] = t.dataset.set.split('='); s[k] = v; return pgRefresh(true); }
+  if (t.hasAttribute('data-toggle') && !t.disabled) { s[t.dataset.toggle] = !s[t.dataset.toggle]; return pgRefresh(true); }
+});
+document.addEventListener('change', e => {
+  const t = e.target; if (!t.matches('[data-pg-set]') || t.tagName !== 'SELECT') return;
+  const root = $('#pg'); const id = root.dataset.id, s = pgState[id], d = PG[id];
+  s[t.dataset.pgSet] = t.value; if (d.onChange) d.onChange(s, t.dataset.pgSet); pgRefresh(true);
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'search') { navFilter = t.value; renderSidebar(); return; }
+  if (!t.matches('[data-pg-text]')) return;
+  const root = $('#pg'); pgState[root.dataset.id][t.dataset.pgText] = t.value; pgRefresh(false);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMenu();
+  if (e.key === 'Enter' && e.target.id === 'search') { const q = norm(navFilter); const hit = [...DOCS.map(d => [d.id, d.n]), ...FOUNDATIONS, ['inicio', 'Primeiros passos']].find(([, n]) => norm(n).includes(q)); if (hit) go(hit[0]); }
+});
+
+/* ---------- Início ---------- */
+(function boot() {
+  let start = 'botao';
+  try { const h = (location.hash || '').replace('#', ''); if (ROUTES.has(h)) start = h; } catch (e) { /* ignore */ }
+  go(start, { keepScroll: true });
+})();
+
+</script>
+</body></html>
