@@ -428,7 +428,7 @@ const OLD2DS = { pin: 'localizacao-localizacao.outline', clock: 'data-e-hora-rel
 const dsKey = n => (DS_ICON_BY_KEY[n] ? n : OLD2DS[n]);
 const dsLabel = i => i.f + (i.s !== 'outline' ? ` (${i.s})` : '');
 const dsSvg = (i, cls) => i.svg.replace('<svg ', `<svg class="${cls}" `);
-const iconPrev = n => { const k = dsKey(n); return k ? DS_ICON_BY_KEY[k].svg : svg(n); };
+const iconPrev = n => { const k = dsKey(n); return k ? DS_ICON_BY_KEY[k].svg.replace('<svg ', '<svg aria-hidden="true" focusable="false" ') : svg(n); };
 const iconHtml = n => { const k = dsKey(n); return k ? `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><!-- conteúdo de svg/${k}.svg --></svg>` : svg(n); };
 const ICON_OPTS = [['', 'Nenhum'], ...DS_ICONS.filter(i => i.s !== 'social').map(i => [i.k, dsLabel(i)])];
 
@@ -437,10 +437,12 @@ const escA = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 const pre = (p, cls) => cls.split(/\s+/).filter(Boolean).map(x => p + x).join(' ');
 const N = (t, c, a, ch, extra) => Object.assign({ t, c, a: a || {}, ch: (ch || []).filter(x => x !== null && x !== undefined && x !== false) }, extra || {});
 const I = n => ({ icon: n });
+let UID = 0;
+const uid = (p, forced) => (forced ? `${p}-${++UID}` : p);
 const VOID = new Set(['input', 'img', 'br', 'hr']);
 
 function attrsOf(node, withPreview) {
-  const all = Object.assign({}, node.a, withPreview ? node.p : {});
+  const all = Object.assign({}, node.a, withPreview ? node.p : node.x);
   let s = '';
   const cls = (node.c || '') + (withPreview && node.f ? ' ' + node.f : '');
   if (cls.trim()) s += ` class="${escA(cls.trim().replace(/\s+/g, ' '))}"`;
@@ -634,23 +636,24 @@ PG.input = {
   ],
   gallery: 'state',
   stage: () => 'light',
-  tree: s => {
+  tree: (s, forced) => {
     const err = s.state === 'error';
+    const id = uid('campo', forced), did = id + '-desc';
     const val = s.state === 'default' ? null : (s.tipo === 'search' ? 'Festival' : 'Texto digitado');
     if (s.tipo === 'search') {
-      return N('div', `${FIELD} w-64 border-border-default`, {}, [I('search'), N('input', 'min-w-0 flex-1 bg-transparent text-desc-lg text-text-primary outline-none placeholder:text-text-secondary', { type: 'search', placeholder: 'Qual rolê você procura?', value: val, 'aria-label': 'Buscar' }), s.state === 'active' && I('x')]);
+      return N('div', `${FIELD} w-64 border-border-default`, { role: 'search' }, [I('search'), N('input', 'min-w-0 flex-1 bg-transparent text-desc-lg text-text-primary outline-none placeholder:text-text-secondary', { type: 'search', placeholder: 'Qual rolê você procura?', value: val, 'aria-label': 'Buscar' }), s.state === 'active' && N('button', 'flex shrink-0 [&>svg]:h-4 [&>svg]:w-4 [&>svg]:text-icon-secondary', { type: 'button', 'aria-label': 'Limpar busca' }, [I('x')])]);
     }
     const tx = err ? 'text-sunset-500' : 'text-text-secondary';
     return N('div', 'flex w-64 flex-col gap-2xsm', {}, [
-      s.label && N('label', `text-desc-lg ${tx}`, { for: 'campo' }, [s.label]),
-      N('div', `${FIELD} ${err ? 'border-sunset-500' : 'border-border-default'}`, {}, [s.left && I(s.left), N('input', `min-w-0 flex-1 bg-transparent text-body outline-none ${err ? 'text-sunset-500 placeholder:text-sunset-500' : 'text-text-primary placeholder:text-text-secondary'}`, { id: 'campo', type: 'text', placeholder: s.placeholder, value: val }), s.right && I(s.right)]),
-      s.desc && N('p', `text-desc-lg ${tx}`, {}, [s.desc]),
+      s.label && N('label', `text-desc-lg ${tx}`, { for: id }, [s.label]),
+      N('div', `${FIELD} ${err ? 'border-sunset-500' : 'border-border-default'}`, {}, [s.left && I(s.left), N('input', `min-w-0 flex-1 bg-transparent text-body outline-none ${err ? 'text-sunset-500 placeholder:text-sunset-500' : 'text-text-primary placeholder:text-text-secondary'}`, { id, type: 'text', placeholder: s.placeholder, value: val, 'aria-invalid': err ? 'true' : null, 'aria-describedby': s.desc ? did : null }), s.right && I(s.right)]),
+      s.desc && N('p', `text-desc-lg ${tx}`, { id: did }, [s.desc]),
     ]);
   },
   usage: s => s.tipo === 'search'
     ? `import { Input } from './Input';\n\n<Input variant="search" placeholder="Qual rolê você procura?" />`
     : `import { Input } from './Input';\n\n<Input${s.label ? `\n  label="${s.label}"` : ''}\n  placeholder="${s.placeholder}"${s.desc ? `\n  description="${s.desc}"` : ''}${s.left ? `\n  leftIcon={<${pascal(s.left)} />}` : ''}${s.right ? `\n  rightIcon={<${pascal(s.right)} />}` : ''}${s.state === 'error' ? '\n  error' : ''}\n/>`,
-  source: () => `const field =\n  '${FIELD}';\n\nexport function Input({\n  variant = 'text',\n  label,\n  description,\n  leftIcon,\n  rightIcon,\n  error = false,\n  id,\n  className = '',\n  ...props\n}) {\n  if (variant === 'search') {\n    return (\n      <div className={\`\${field} w-64 border-border-default \${className}\`}>\n        <SearchIcon />\n        <input\n          type="search"\n          className="min-w-0 flex-1 bg-transparent text-desc-lg text-text-primary outline-none placeholder:text-text-secondary"\n          {...props}\n        />\n      </div>\n    );\n  }\n\n  const tone = error ? 'text-sunset-500' : 'text-text-secondary';\n  return (\n    <div className={\`flex w-64 flex-col gap-2xsm \${className}\`}>\n      {label && <label htmlFor={id} className={\`text-desc-lg \${tone}\`}>{label}</label>}\n      <div className={\`\${field} \${error ? 'border-sunset-500' : 'border-border-default'}\`}>\n        {leftIcon}\n        <input\n          id={id}\n          aria-invalid={error}\n          className={\`min-w-0 flex-1 bg-transparent text-body outline-none \${error ? 'text-sunset-500 placeholder:text-sunset-500' : 'text-text-primary placeholder:text-text-secondary'}\`}\n          {...props}\n        />\n        {rightIcon}\n      </div>\n      {description && <p className={\`text-desc-lg \${tone}\`}>{description}</p>}\n    </div>\n  );\n}\n`,
+  source: () => `import { useId } from 'react';\n\nconst field =\n  '${FIELD}';\n\nexport function Input({\n  variant = 'text',\n  label,\n  description,\n  leftIcon,\n  rightIcon,\n  error = false,\n  id,\n  onClear,\n  className = '',\n  ...props\n}) {\n  const autoId = useId();\n  const fieldId = id ?? autoId;\n  const descId = description ? \`\${fieldId}-desc\` : undefined;\n\n  if (variant === 'search') {\n    return (\n      <div role="search" className={\`\${field} w-64 border-border-default \${className}\`}>\n        <SearchIcon />\n        <input\n          type="search"\n          aria-label={label ?? 'Buscar'}\n          className="min-w-0 flex-1 bg-transparent text-desc-lg text-text-primary outline-none placeholder:text-text-secondary"\n          {...props}\n        />\n        {onClear && (\n          <button type="button" aria-label="Limpar busca" onClick={onClear}>\n            <XIcon />\n          </button>\n        )}\n      </div>\n    );\n  }\n\n  const tone = error ? 'text-sunset-500' : 'text-text-secondary';\n  return (\n    <div className={\`flex w-64 flex-col gap-2xsm \${className}\`}>\n      {label && <label htmlFor={fieldId} className={\`text-desc-lg \${tone}\`}>{label}</label>}\n      <div className={\`\${field} \${error ? 'border-sunset-500' : 'border-border-default'}\`}>\n        {leftIcon}\n        <input\n          id={fieldId}\n          aria-invalid={error}\n          aria-describedby={descId}\n          className={\`min-w-0 flex-1 bg-transparent text-body outline-none \${error ? 'text-sunset-500 placeholder:text-sunset-500' : 'text-text-primary placeholder:text-text-secondary'}\`}\n          {...props}\n        />\n        {rightIcon}\n      </div>\n      {description && <p id={descId} className={\`text-desc-lg \${tone}\`}>{description}</p>}\n    </div>\n  );\n}\n`,
 };
 
 /* ---------- LINK ---------- */
@@ -674,9 +677,9 @@ PG.switcher = {
   file: 'Switcher.jsx',
   controls: [{ k: 'items', label: 'Opções (separadas por vírgula)', type: 'text', def: 'Hoje, Amanhã, Fim de semana' }, { k: 'selected', label: 'Selecionada', type: 'seg', opts: [['0', '1ª'], ['1', '2ª'], ['2', '3ª'], ['3', '4ª']], def: '0' }],
   stage: () => 'light',
-  tree: s => { const l = items(s); const sel = Math.min(+s.selected, l.length - 1); return N('div', SW_BOX, { role: 'radiogroup' }, l.map((t, i) => N('button', `${SW_ITEM} ${i === sel ? SW_ON : SW_OFF}`, { type: 'button', role: 'radio', 'aria-checked': String(i === sel) }, [t], { p: { 'data-set': 'selected=' + i } }))); },
-  usage: s => `import { Switcher } from './Switcher';\n\n<Switcher\n  options={[${items(s).map(x => `'${x}'`).join(', ')}]}\n  value={${Math.min(+s.selected, items(s).length - 1)}}\n  onChange={setValue}\n/>`,
-  source: () => `const box = '${SW_BOX}';\nconst item =\n  '${SW_ITEM}';\nconst on = '${SW_ON}';\nconst off = '${SW_OFF}';\n\nexport function Switcher({ options, value, onChange }) {\n  return (\n    <div role="radiogroup" className={box}>\n      {options.map((label, i) => (\n        <button\n          key={label}\n          type="button"\n          role="radio"\n          aria-checked={i === value}\n          onClick={() => onChange(i)}\n          className={\`\${item} \${i === value ? on : off}\`}\n        >\n          {label}\n        </button>\n      ))}\n    </div>\n  );\n}\n`,
+  tree: s => { const l = items(s); const sel = Math.min(+s.selected, l.length - 1); return N('div', SW_BOX, { role: 'radiogroup', 'aria-label': 'Opções' }, l.map((t, i) => N('button', `${SW_ITEM} ${i === sel ? SW_ON : SW_OFF}`, { type: 'button', role: 'radio', 'aria-checked': String(i === sel), tabindex: i === sel ? '0' : '-1' }, [t], { p: { 'data-set': 'selected=' + i } }))); },
+  usage: s => `import { Switcher } from './Switcher';\n\n<Switcher\n  label="Período"\n  options={[${items(s).map(x => `'${x}'`).join(', ')}]}\n  value={${Math.min(+s.selected, items(s).length - 1)}}\n  onChange={setValue}\n/>`,
+  source: () => `const box = '${SW_BOX}';\nconst item =\n  '${SW_ITEM}';\nconst on = '${SW_ON}';\nconst off = '${SW_OFF}';\n\nexport function Switcher({ label, options, value, onChange }) {\n  // Setas movem a seleção (roving tabindex): só a opção ativa entra na ordem de Tab.\n  const onKeyDown = (e, i) => {\n    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];\n    if (!step) return;\n    e.preventDefault();\n    const next = (i + step + options.length) % options.length;\n    onChange(next);\n    e.currentTarget.parentElement.children[next].focus();\n  };\n  return (\n    <div role="radiogroup" aria-label={label} className={box}>\n      {options.map((text, i) => (\n        <button\n          key={text}\n          type="button"\n          role="radio"\n          aria-checked={i === value}\n          tabIndex={i === value ? 0 : -1}\n          onClick={() => onChange(i)}\n          onKeyDown={(e) => onKeyDown(e, i)}\n          className={\`\${item} \${i === value ? on : off}\`}\n        >\n          {text}\n        </button>\n      ))}\n    </div>\n  );\n}\n`,
 };
 
 /* ---------- TAB ---------- */
@@ -688,9 +691,9 @@ PG.tab = {
   file: 'Tabs.jsx',
   controls: [{ k: 'items', label: 'Abas (separadas por vírgula)', type: 'text', def: 'Eventos, Artistas, Locais' }, { k: 'selected', label: 'Selecionada', type: 'seg', opts: [['0', '1ª'], ['1', '2ª'], ['2', '3ª'], ['3', '4ª']], def: '0' }, { k: 'icon', label: 'Ícone', type: 'select', opts: ICON_OPTS, def: '' }],
   stage: () => 'light',
-  tree: s => { const l = items(s); const sel = Math.min(+s.selected, l.length - 1); return N('div', TAB_LIST, { role: 'tablist' }, l.map((t, i) => N('button', `${TAB_ITEM} ${i === sel ? TAB_ON : TAB_OFF}`, { type: 'button', role: 'tab', 'aria-selected': String(i === sel) }, [s.icon && I(s.icon), t], { p: { 'data-set': 'selected=' + i } }))); },
-  usage: s => `import { Tabs } from './Tabs';\n\n<Tabs\n  tabs={[${items(s).map(x => `'${x}'`).join(', ')}]}\n  value={${Math.min(+s.selected, items(s).length - 1)}}\n  onChange={setValue}${s.icon ? `\n  icon={<${pascal(s.icon)} />}` : ''}\n/>`,
-  source: () => `const list = '${TAB_LIST}';\nconst item =\n  '${TAB_ITEM}';\nconst on = '${TAB_ON}';\nconst off = '${TAB_OFF}';\n\nexport function Tabs({ tabs, value, onChange, icon }) {\n  return (\n    <div role="tablist" className={list}>\n      {tabs.map((label, i) => (\n        <button\n          key={label}\n          type="button"\n          role="tab"\n          aria-selected={i === value}\n          onClick={() => onChange(i)}\n          className={\`\${item} \${i === value ? on : off}\`}\n        >\n          {icon}\n          {label}\n        </button>\n      ))}\n    </div>\n  );\n}\n`,
+  tree: s => { const l = items(s); const sel = Math.min(+s.selected, l.length - 1); return N('div', TAB_LIST, { role: 'tablist', 'aria-label': 'Seções' }, l.map((t, i) => N('button', `${TAB_ITEM} ${i === sel ? TAB_ON : TAB_OFF}`, { type: 'button', role: 'tab', 'aria-selected': String(i === sel), tabindex: i === sel ? '0' : '-1' }, [s.icon && I(s.icon), t], { p: { 'data-set': 'selected=' + i } }))); },
+  usage: s => `import { Tabs } from './Tabs';\n\n<Tabs\n  label="Seções"\n  name="home"\n  tabs={[${items(s).map(x => `'${x}'`).join(', ')}]}\n  value={${Math.min(+s.selected, items(s).length - 1)}}\n  onChange={setValue}${s.icon ? `\n  icon={<${pascal(s.icon)} />}` : ''}\n/>`,
+  source: () => `const list = '${TAB_LIST}';\nconst item =\n  '${TAB_ITEM}';\nconst on = '${TAB_ON}';\nconst off = '${TAB_OFF}';\n\nexport function Tabs({ label, name, tabs, value, onChange, icon }) {\n  // Cada aba aponta para o painel "<name>-panel-<i>" (role="tabpanel",\n  // aria-labelledby="<name>-tab-<i>"), que fica no conteúdo da página.\n  const onKeyDown = (e, i) => {\n    const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];\n    if (!step) return;\n    e.preventDefault();\n    const next = (i + step + tabs.length) % tabs.length;\n    onChange(next);\n    e.currentTarget.parentElement.children[next].focus();\n  };\n  return (\n    <div role="tablist" aria-label={label} className={list}>\n      {tabs.map((text, i) => (\n        <button\n          key={text}\n          id={\`\${name}-tab-\${i}\`}\n          type="button"\n          role="tab"\n          aria-selected={i === value}\n          aria-controls={\`\${name}-panel-\${i}\`}\n          tabIndex={i === value ? 0 : -1}\n          onClick={() => onChange(i)}\n          onKeyDown={(e) => onKeyDown(e, i)}\n          className={\`\${item} \${i === value ? on : off}\`}\n        >\n          {icon}\n          {text}\n        </button>\n      ))}\n    </div>\n  );\n}\n`,
 };
 
 /* ---------- AVALIAÇÕES ---------- */
@@ -713,11 +716,11 @@ PG.avaliacoes = {
   ],
   gallery: 'nivel',
   stage: () => 'light',
-  tree: s => { const a = AV[s.nivel]; return N('div', AV_ROOT, {}, [
+  tree: (s, forced) => { const a = AV[s.nivel]; const tid = uid('avaliacao-titulo', forced); return N('section', AV_ROOT, { 'aria-labelledby': tid }, [
     N('span', AV_ICON + ' ' + a.box, { 'aria-hidden': 'true' }, [I(a.face)]),
     N('div', 'flex min-w-0 flex-col gap-2xsm', {}, [
-      N('p', 'font-display text-h6-m font-bold text-text-primary', {}, [s.titulo]),
-      N('div', 'flex items-center gap-xsm', {}, [
+      HEAD('h3', 'font-display text-h6-m font-bold text-text-primary', s.titulo, tid),
+      N('p', 'flex items-center gap-xsm', {}, [
         N('span', 'font-display text-h3-m font-bold text-feedback-danger', {}, [a.n + ',0']),
         N('span', AV_STAR, { role: 'img', 'aria-label': `${a.n} de 5 estrelas` }, [1, 2, 3, 4, 5].map(i => I(i <= a.n ? 'satisfacao-estrela-preenchida.outline' : 'satisfacao-estrela-vazia.outline'))),
       ]),
@@ -725,7 +728,7 @@ PG.avaliacoes = {
     ]),
   ]); },
   usage: s => `import { Avaliacao } from './Avaliacao';\n\n<Avaliacao\n  avaliacao="${s.nivel}"${s.titulo !== 'Avaliação dos clientes' ? `\n  titulo="${s.titulo}"` : ''}\n  total="${s.total}"\n/>`,
-  source: () => { const t = {}; for (const k in AV) t[k] = { nota: AV[k].n, face: AV[k].comp || pascal(AV[k].face), box: AV[k].box }; return `import {\n  SatisfacaoCarinhaFelizOutline,\n  SatisfacaoCarinhaAlegreOutline,\n  SatisfacaoCarinhaNeutraOutline,\n  SatisfacaoCarinhaInsatisfeitaOutline,\n  SatisfacaoCarinhaRaivaOutline,\n  SatisfacaoEstrelaPreenchidaOutline as StarFilled,\n  SatisfacaoEstrelaVaziaOutline as StarEmpty,\n} from './icons';\n\nconst niveis = {\n${Object.keys(AV).map(k => `  ${k}: { nota: ${AV[k].n}, Face: ${pascal(AV[k].face)}, box: '${AV[k].box}' }`).join(',\n')},\n};\n\nexport function Avaliacao({\n  avaliacao = 'excelente',\n  titulo = 'Avaliação dos clientes',\n  total,\n}) {\n  const { nota, Face, box } = niveis[avaliacao];\n  return (\n    <div className="${AV_ROOT}">\n      <span aria-hidden="true" className={\`${AV_ICON} \${box}\`}>\n        <Face />\n      </span>\n      <div className="flex min-w-0 flex-col gap-2xsm">\n        <p className="font-display text-h6-m font-bold text-text-primary">{titulo}</p>\n        <div className="flex items-center gap-xsm">\n          <span className="font-display text-h3-m font-bold text-feedback-danger">{nota},0</span>\n          <span role="img" aria-label={\`\${nota} de 5 estrelas\`} className="${AV_STAR}">\n            {[1, 2, 3, 4, 5].map((i) => (i <= nota ? <StarFilled key={i} /> : <StarEmpty key={i} />))}\n          </span>\n        </div>\n        <span className="text-desc text-text-secondary">{total}</span>\n      </div>\n    </div>\n  );\n}\n`; },
+  source: () => { const t = {}; for (const k in AV) t[k] = { nota: AV[k].n, face: AV[k].comp || pascal(AV[k].face), box: AV[k].box }; return `import { useId } from 'react';\nimport {\n  SatisfacaoCarinhaFelizOutline,\n  SatisfacaoCarinhaAlegreOutline,\n  SatisfacaoCarinhaNeutraOutline,\n  SatisfacaoCarinhaInsatisfeitaOutline,\n  SatisfacaoCarinhaRaivaOutline,\n  SatisfacaoEstrelaPreenchidaOutline as StarFilled,\n  SatisfacaoEstrelaVaziaOutline as StarEmpty,\n} from './icons';\n\nconst niveis = {\n${Object.keys(AV).map(k => `  ${k}: { nota: ${AV[k].n}, Face: ${pascal(AV[k].face)}, box: '${AV[k].box}' }`).join(',\n')},\n};\n\nexport function Avaliacao({\n  avaliacao = 'excelente',\n  titulo = 'Avaliação dos clientes',\n  total,\n}) {\n  const { nota, Face, box } = niveis[avaliacao];\n  const titleId = useId();\n  return (\n    <section aria-labelledby={titleId} className="${AV_ROOT}">\n      <span aria-hidden="true" className={\`${AV_ICON} \${box}\`}>\n        <Face />\n      </span>\n      <div className="flex min-w-0 flex-col gap-2xsm">\n        <h3 id={titleId} className="font-display text-h6-m font-bold text-text-primary">{titulo}</h3>\n        <p className="flex items-center gap-xsm">\n          <span className="font-display text-h3-m font-bold text-feedback-danger">{nota},0</span>\n          <span role="img" aria-label={\`\${nota} de 5 estrelas\`} className="${AV_STAR}">\n            {[1, 2, 3, 4, 5].map((i) => (i <= nota ? <StarFilled key={i} /> : <StarEmpty key={i} />))}\n          </span>\n        </p>\n        <span className="text-desc text-text-secondary">{total}</span>\n      </div>\n    </section>\n  );\n}\n`; },
 };
 
 /* ======================================================================
@@ -740,10 +743,10 @@ const ACC_HEAD = 'flex w-full items-center justify-between gap-lg text-left focu
 const ACC_TITLE = 'font-display text-h6-m font-bold text-text-secondary';
 const ACC_ICON = 'shrink-0 text-icon-default [&>svg]:h-m [&>svg]:w-m';
 const ACC_BODY = 'bg-bg-page px-m py-m text-body text-text-secondary';
-const accTree = (list, open, content, w = 'w-[312px]') => N('div', 'flex ' + w + ' max-w-full flex-col gap-m', {}, list.map((t, i) => N('div', 'flex flex-col gap-m', {}, [
-  N('button', ACC_HEAD, { type: 'button', 'aria-expanded': String(open === i) }, [N('span', ACC_TITLE, {}, [t]), N('span', ACC_ICON + (open === i ? ' rotate-180' : ''), { 'aria-hidden': 'true' }, [I(K.baixo)])], { p: { 'data-set': 'open=' + (open === i ? -1 : i) } }),
-  open === i && N('div', ACC_BODY, {}, [content]),
-  i < list.length - 1 && N('div', 'h-px w-full bg-border-default', {}),
+const accTree = (list, open, content, w = 'w-[312px]', pid = 'acc') => N('ul', 'flex ' + w + ' max-w-full flex-col gap-m', { role: 'list' }, list.map((t, i) => N('li', 'flex flex-col gap-m', {}, [
+  N('h3', '', {}, [N('button', ACC_HEAD, { type: 'button', id: `${pid}-btn-${i}`, 'aria-expanded': String(open === i), 'aria-controls': `${pid}-panel-${i}` }, [N('span', ACC_TITLE, {}, [t]), N('span', ACC_ICON + (open === i ? ' rotate-180' : ''), { 'aria-hidden': 'true' }, [I(K.baixo)])], { p: { 'data-set': 'open=' + (open === i ? -1 : i) } })]),
+  N('section', ACC_BODY, { id: `${pid}-panel-${i}`, 'aria-labelledby': `${pid}-btn-${i}`, hidden: open !== i }, [content]),
+  i < list.length - 1 && N('hr', 'h-px w-full border-0 bg-border-default', {}),
 ])));
 PG.accordion = {
   file: 'Accordion.jsx',
@@ -755,7 +758,7 @@ PG.accordion = {
   stage: () => 'light',
   tree: s => accTree(items(s), +s.open, s.content),
   usage: s => `import { Accordion } from './Accordion';\n\n<Accordion\n  defaultOpen={${s.open}}\n  items={[\n${items(s).map(t => `    { title: '${t}', content: '${s.content}' }`).join(',\n')},\n  ]}\n/>`,
-  source: () => `import { useState } from 'react';\n${IMPORTS([K.baixo]).replace(/\n\n$/, '\n')}\nexport function Accordion({ items, defaultOpen = -1 }) {\n  const [open, setOpen] = useState(defaultOpen);\n  return (\n    <div className="flex w-[312px] max-w-full flex-col gap-m">\n      {items.map(({ title, content }, i) => (\n        <div key={title} className="flex flex-col gap-m">\n          <button\n            type="button"\n            aria-expanded={open === i}\n            onClick={() => setOpen(open === i ? -1 : i)}\n            className="${ACC_HEAD}"\n          >\n            <span className="${ACC_TITLE}">{title}</span>\n            <span aria-hidden="true" className={'${ACC_ICON}' + (open === i ? ' rotate-180' : '')}>\n              <${pascal(K.baixo)} />\n            </span>\n          </button>\n          {open === i && <div className="${ACC_BODY}">{content}</div>}\n          {i < items.length - 1 && <div className="h-px w-full bg-border-default" />}\n        </div>\n      ))}\n    </div>\n  );\n}\n`,
+  source: () => `import { useId, useState } from 'react';\n${IMPORTS([K.baixo]).replace(/\n\n$/, '\n')}\nexport function Accordion({ items, defaultOpen = -1 }) {\n  const [open, setOpen] = useState(defaultOpen);\n  const id = useId();\n  return (\n    <ul role="list" className="flex w-[312px] max-w-full flex-col gap-m">\n      {items.map(({ title, content }, i) => (\n        <li key={title} className="flex flex-col gap-m">\n          <h3>\n            <button\n              type="button"\n              id={\`\${id}-btn-\${i}\`}\n              aria-expanded={open === i}\n              aria-controls={\`\${id}-panel-\${i}\`}\n              onClick={() => setOpen(open === i ? -1 : i)}\n              className="${ACC_HEAD}"\n            >\n              <span className="${ACC_TITLE}">{title}</span>\n              <span aria-hidden="true" className={'${ACC_ICON}' + (open === i ? ' rotate-180' : '')}>\n                <${pascal(K.baixo)} />\n              </span>\n            </button>\n          </h3>\n          <section\n            id={\`\${id}-panel-\${i}\`}\n            aria-labelledby={\`\${id}-btn-\${i}\`}\n            hidden={open !== i}\n            className="${ACC_BODY}"\n          >\n            {content}\n          </section>\n          {i < items.length - 1 && <hr className="h-px w-full border-0 bg-border-default" />}\n        </li>\n      ))}\n    </ul>\n  );\n}\n`,
 };
 
 /* ---------- BREADCRUMB ---------- */
@@ -768,9 +771,9 @@ PG.breadcrumb = {
     { k: 'home', label: 'Ícone de início', type: 'bool', def: true },
   ],
   stage: () => 'light',
-  tree: s => { const l = items(s); return N('nav', BC_NAV, { 'aria-label': 'Breadcrumb' }, [s.home && N('span', BC_HOME, { 'aria-hidden': 'true' }, [I(K.casa)]), ...l.map((t, i) => i < l.length - 1 ? N('a', LINK_CLS, { href: '#' }, [t, I(K.dir)], { p: { 'data-noop': '1' } }) : N('span', 'text-desc text-text-secondary', { 'aria-current': 'page' }, [t]))]); },
+  tree: s => { const l = items(s); return N('nav', BC_NAV, { 'aria-label': 'Breadcrumb' }, [s.home && N('span', BC_HOME, { 'aria-hidden': 'true' }, [I(K.casa)]), N('ol', 'flex flex-wrap items-center gap-xsm', { role: 'list' }, l.map((t, i) => N('li', 'inline-flex', {}, [i < l.length - 1 ? N('a', LINK_CLS, { href: '#' }, [t, I(K.dir)], { p: { 'data-noop': '1' } }) : N('span', 'text-desc text-text-secondary', { 'aria-current': 'page' }, [t])])))]); },
   usage: s => `import { Breadcrumb } from './Breadcrumb';\n\n<Breadcrumb${s.home ? '' : ' showHome={false}'}\n  items={[\n${items(s).map((t, i, a) => `    { label: '${t}'${i < a.length - 1 ? `, href: '/${t.toLowerCase().replace(/\s+/g, '-')}'` : ''} }`).join(',\n')},\n  ]}\n/>`,
-  source: () => `${IMPORTS([K.casa, K.dir])}export function Breadcrumb({ items, showHome = true }) {\n  return (\n    <nav aria-label="Breadcrumb" className="${BC_NAV}">\n      {showHome && (\n        <span aria-hidden="true" className="${BC_HOME}">\n          <${pascal(K.casa)} />\n        </span>\n      )}\n      {items.map(({ label, href }, i) =>\n        i < items.length - 1 ? (\n          <a key={label} href={href} className="${LINK_CLS}">\n            {label}\n            <${pascal(K.dir)} />\n          </a>\n        ) : (\n          <span key={label} aria-current="page" className="text-desc text-text-secondary">\n            {label}\n          </span>\n        ),\n      )}\n    </nav>\n  );\n}\n`,
+  source: () => `${IMPORTS([K.casa, K.dir])}export function Breadcrumb({ items, showHome = true }) {\n  return (\n    <nav aria-label="Breadcrumb" className="${BC_NAV}">\n      {showHome && (\n        <span aria-hidden="true" className="${BC_HOME}">\n          <${pascal(K.casa)} />\n        </span>\n      )}\n      <ol role="list" className="flex flex-wrap items-center gap-xsm">\n        {items.map(({ label, href }, i) => (\n          <li key={label} className="inline-flex">\n            {i < items.length - 1 ? (\n              <a href={href} className="${LINK_CLS}">\n                {label}\n                <${pascal(K.dir)} />\n              </a>\n            ) : (\n              <span aria-current="page" className="text-desc text-text-secondary">\n                {label}\n              </span>\n            )}\n          </li>\n        ))}\n      </ol>\n    </nav>\n  );\n}\n`,
 };
 
 /* ---------- POPOVER ---------- */
@@ -790,9 +793,9 @@ PG.popover = {
   gallery: 'tipo',
   galleryApply: (s, v) => ({ label: POP[v].label }),
   stage: () => 'gray',
-  tree: s => N('div', POP_BASE + ' ' + POP[s.tipo].tone, { role: 'status' }, [I(POP[s.tipo].icon), s.label]),
+  tree: s => N('p', POP_BASE + ' ' + POP[s.tipo].tone, { role: s.tipo === 'aviso' ? 'alert' : 'status' }, [I(POP[s.tipo].icon), s.label]),
   usage: s => `import { Popover } from './Popover';\n\n<Popover${s.tipo !== 'neutro' ? ` tipo="${s.tipo}"` : ''}>${s.label}</Popover>`,
-  source: () => { const t = {}; for (const k in POP) t[k] = POP[k].tone; return `${IMPORTS([K.checkc, K.fechar])}const base =\n  '${POP_BASE}';\n\nconst tipos = ${fmt(t)};\n\nexport function Popover({ tipo = 'neutro', children }) {\n  const Icon = tipo === 'aviso' ? ${pascal(K.fechar)} : ${pascal(K.checkc)};\n  return (\n    <div role="status" className={[base, tipos[tipo]].join(' ')}>\n      <Icon />\n      {children}\n    </div>\n  );\n}\n`; },
+  source: () => { const t = {}; for (const k in POP) t[k] = POP[k].tone; return `${IMPORTS([K.checkc, K.fechar])}const base =\n  '${POP_BASE}';\n\nconst tipos = ${fmt(t)};\n\nexport function Popover({ tipo = 'neutro', children }) {\n  const Icon = tipo === 'aviso' ? ${pascal(K.fechar)} : ${pascal(K.checkc)};\n  return (\n    <p\n      role={tipo === 'aviso' ? 'alert' : 'status'}\n      className={[base, tipos[tipo]].join(' ')}\n    >\n      <Icon />\n      {children}\n    </p>\n  );\n}\n`; },
 };
 
 /* ---------- LOADING ---------- */
@@ -807,12 +810,15 @@ PG.loading = {
   ],
   gallery: 'estado',
   stage: () => 'light',
-  tree: s => N('svg', 'text-action-primary' + (s.anim ? ' animate-spin' : ''), { width: 64, height: 64, viewBox: '0 0 64 64', fill: 'none', role: 'status', 'aria-label': 'Carregando' }, [
-    N('circle', '', { cx: 32, cy: 32, r: LD_R, stroke: 'currentColor', 'stroke-width': 3.84, opacity: 0.24 }),
-    N('path', '', { d: LD_ARC, stroke: 'currentColor', 'stroke-width': 3.84, transform: s.anim ? null : `rotate(${(+s.estado - 1) * 90} 32 32)` }),
+  tree: s => N('span', 'inline-flex', { role: 'status' }, [
+    N('svg', 'text-action-primary' + (s.anim ? ' animate-spin' : ''), { width: 64, height: 64, viewBox: '0 0 64 64', fill: 'none', 'aria-hidden': 'true', focusable: 'false' }, [
+      N('circle', '', { cx: 32, cy: 32, r: LD_R, stroke: 'currentColor', 'stroke-width': 3.84, opacity: 0.24 }),
+      N('path', '', { d: LD_ARC, stroke: 'currentColor', 'stroke-width': 3.84, transform: s.anim ? null : `rotate(${(+s.estado - 1) * 90} 32 32)` }),
+    ]),
+    N('span', 'sr-only', {}, ['Carregando']),
   ]),
   usage: s => `import { Loader } from './Loader';\n\n<Loader${s.anim ? '' : ` frame={${s.estado}}`} />`,
-  source: () => `export function Loader({ frame, className = '' }) {\n  // sem "frame": gira continuamente. Com "frame" (1 a 4): posição fixa.\n  const spin = frame === undefined;\n  return (\n    <svg\n      role="status"\n      aria-label="Carregando"\n      width="64"\n      height="64"\n      viewBox="0 0 64 64"\n      fill="none"\n      className={'text-action-primary ' + (spin ? 'animate-spin ' : '') + className}\n    >\n      <circle cx="32" cy="32" r="${LD_R}" stroke="currentColor" strokeWidth="3.84" opacity=".24" />\n      <path\n        d="${LD_ARC}"\n        stroke="currentColor"\n        strokeWidth="3.84"\n        transform={spin ? undefined : \`rotate(\${(frame - 1) * 90} 32 32)\`}\n      />\n    </svg>\n  );\n}\n`,
+  source: () => `export function Loader({ frame, className = '' }) {\n  // sem "frame": gira continuamente. Com "frame" (1 a 4): posição fixa.\n  const spin = frame === undefined;\n  return (\n    <span role="status" className={'inline-flex ' + className}>\n      <svg\n        aria-hidden="true"\n        focusable="false"\n        width="64"\n        height="64"\n        viewBox="0 0 64 64"\n        fill="none"\n        className={'text-action-primary ' + (spin ? 'animate-spin' : '')}\n      >\n        <circle cx="32" cy="32" r="${LD_R}" stroke="currentColor" strokeWidth="3.84" opacity=".24" />\n        <path\n          d="${LD_ARC}"\n          stroke="currentColor"\n          strokeWidth="3.84"\n          transform={spin ? undefined : \`rotate(\${(frame - 1) * 90} 32 32)\`}\n        />\n      </svg>\n      <span className="sr-only">Carregando</span>\n    </span>\n  );\n}\n`,
 };
 
 /* ---------- PAGINATION (dots) ---------- */
@@ -824,13 +830,13 @@ PG.pagination = {
     { k: 'inv', label: 'Invertido (sobre fundo escuro)', type: 'bool', def: false },
   ],
   stage: s => (s.inv ? 'dark' : 'light'),
-  tree: s => { const n = +s.total, a = Math.min(+s.active, n); return N('div', 'inline-flex items-center gap-sm', { role: 'tablist' }, Array.from({ length: n }, (_, i) => N('button', 'rounded-pill ' + (i + 1 === a ? 'h-sm w-sm' : 'h-xsm w-xsm') + ' ' + (s.inv ? 'bg-bg-surface' : 'bg-action-primary'), { type: 'button', role: 'tab', 'aria-selected': String(i + 1 === a), 'aria-label': `Página ${i + 1}` }, [], { p: { 'data-set': 'active=' + (i + 1) } }))); },
+  tree: s => { const n = +s.total, a = Math.min(+s.active, n); return N('nav', 'inline-flex', { 'aria-label': 'Paginação' }, [N('ul', 'inline-flex items-center gap-sm', { role: 'list' }, Array.from({ length: n }, (_, i) => N('li', 'flex', {}, [N('button', 'rounded-pill focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary ' + (i + 1 === a ? 'h-sm w-sm' : 'h-xsm w-xsm') + ' ' + (s.inv ? 'bg-bg-surface' : 'bg-action-primary'), { type: 'button', 'aria-label': `Página ${i + 1}`, 'aria-current': i + 1 === a ? 'true' : null }, [], { p: { 'data-set': 'active=' + (i + 1) } })])))]); },
   usage: s => `import { PaginationDots } from './PaginationDots';\n\n<PaginationDots total={${s.total}} active={${Math.min(+s.active, +s.total)}}${s.inv ? ' inverted' : ''} onChange={setPage} />`,
-  source: () => `export function PaginationDots({ total, active, inverted = false, onChange }) {\n  const color = inverted ? 'bg-bg-surface' : 'bg-action-primary';\n  return (\n    <div role="tablist" className="inline-flex items-center gap-sm">\n      {Array.from({ length: total }, (_, i) => (\n        <button\n          key={i}\n          type="button"\n          role="tab"\n          aria-selected={i + 1 === active}\n          aria-label={'Página ' + (i + 1)}\n          onClick={() => onChange?.(i + 1)}\n          className={'rounded-pill ' + (i + 1 === active ? 'h-sm w-sm ' : 'h-xsm w-xsm ') + color}\n        />\n      ))}\n    </div>\n  );\n}\n`,
+  source: () => `export function PaginationDots({ total, active, inverted = false, onChange }) {\n  const color = inverted ? 'bg-bg-surface' : 'bg-action-primary';\n  return (\n    <nav aria-label="Paginação" className="inline-flex">\n      <ul role="list" className="inline-flex items-center gap-sm">\n        {Array.from({ length: total }, (_, i) => (\n          <li key={i} className="flex">\n            <button\n              type="button"\n              aria-label={'Página ' + (i + 1)}\n              aria-current={i + 1 === active ? 'true' : undefined}\n              onClick={() => onChange?.(i + 1)}\n              className={'rounded-pill focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary ' + (i + 1 === active ? 'h-sm w-sm ' : 'h-xsm w-xsm ') + color}\n            />\n          </li>\n        ))}\n      </ul>\n    </nav>\n  );\n}\n`,
 };
 
 /* ---------- FORMULÁRIO (radio e checkbox) ---------- */
-const FM_BOX = 'flex h-m w-m shrink-0 items-center justify-center border';
+const FM_BOX = 'flex h-m w-m shrink-0 items-center justify-center border peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-text-primary';
 PG.formulario = {
   file: 'Choice.jsx',
   controls: [
@@ -840,9 +846,9 @@ PG.formulario = {
   ],
   gallery: 'tipo',
   stage: () => 'light',
-  tree: s => { const r = s.tipo === 'radio'; const box = FM_BOX + (r ? ' rounded-pill' : ' rounded-3xsm') + (s.checked ? (r ? ' border-action-primary' : ' border-action-primary bg-action-primary text-text-on-action') : ' border-border-default'); return N('label', 'inline-flex cursor-pointer items-center gap-xsm text-body text-text-primary', {}, [N('span', box, { 'aria-hidden': 'true' }, [s.checked && (r ? N('span', 'h-4 w-4 rounded-pill bg-action-primary', {}) : N('span', 'flex [&>svg]:h-3 [&>svg]:w-3', {}, [I(K.check)]))]), s.label], { p: { 'data-toggle': 'checked' } }); },
+  tree: s => { const r = s.tipo === 'radio'; const box = FM_BOX + (r ? ' rounded-pill' : ' rounded-3xsm') + (s.checked ? (r ? ' border-action-primary' : ' border-action-primary bg-action-primary text-text-on-action') : ' border-border-default'); return N('label', 'inline-flex cursor-pointer items-center gap-xsm text-body text-text-primary', {}, [N('input', 'peer sr-only', { type: r ? 'radio' : 'checkbox', name: r ? 'opcao' : null, checked: s.checked }, []), N('span', box, { 'aria-hidden': 'true' }, [s.checked && (r ? N('span', 'h-4 w-4 rounded-pill bg-action-primary', {}) : N('span', 'flex [&>svg]:h-3 [&>svg]:w-3', {}, [I(K.check)]))]), s.label], { p: { 'data-toggle': 'checked' } }); },
   usage: s => `import { ${s.tipo === 'radio' ? 'Radio' : 'Checkbox'} } from './Choice';\n\n<${s.tipo === 'radio' ? 'Radio' : 'Checkbox'} checked={${s.checked}} onChange={setValue}>\n  ${s.label}\n</${s.tipo === 'radio' ? 'Radio' : 'Checkbox'}>`,
-  source: () => `${IMPORTS([K.check])}const box = '${FM_BOX}';\n\nfunction Choice({ type, checked, onChange, children }) {\n  const radio = type === 'radio';\n  const state = checked\n    ? radio\n      ? 'border-action-primary'\n      : 'border-action-primary bg-action-primary text-text-on-action'\n    : 'border-border-default';\n  return (\n    <label className="inline-flex cursor-pointer items-center gap-xsm text-body text-text-primary">\n      <input type={type} checked={checked} onChange={onChange} className="sr-only" />\n      <span aria-hidden="true" className={[box, radio ? 'rounded-pill' : 'rounded-3xsm', state].join(' ')}>\n        {checked && (radio ? <span className="h-4 w-4 rounded-pill bg-action-primary" /> : <span className="flex [&>svg]:h-3 [&>svg]:w-3"><${pascal(K.check)} /></span>)}\n      </span>\n      {children}\n    </label>\n  );\n}\n\nexport const Radio = (props) => <Choice type="radio" {...props} />;\nexport const Checkbox = (props) => <Choice type="checkbox" {...props} />;\n`,
+  source: () => `${IMPORTS([K.check])}const box = '${FM_BOX}';\n\nfunction Choice({ type, checked, onChange, children, ...props }) {\n  const radio = type === 'radio';\n  const state = checked\n    ? radio\n      ? 'border-action-primary'\n      : 'border-action-primary bg-action-primary text-text-on-action'\n    : 'border-border-default';\n  return (\n    <label className="inline-flex cursor-pointer items-center gap-xsm text-body text-text-primary">\n      <input\n        type={type}\n        checked={checked}\n        onChange={onChange}\n        className="peer sr-only"\n        {...props}\n      />\n      <span aria-hidden="true" className={[box, radio ? 'rounded-pill' : 'rounded-3xsm', state].join(' ')}>\n        {checked && (radio ? <span className="h-4 w-4 rounded-pill bg-action-primary" /> : <span className="flex [&>svg]:h-3 [&>svg]:w-3"><${pascal(K.check)} /></span>)}\n      </span>\n      {children}\n    </label>\n  );\n}\n\nexport const Radio = (props) => <Choice type="radio" {...props} />;\nexport const Checkbox = (props) => <Choice type="checkbox" {...props} />;\n`,
 };
 
 /* ---------- ÍCONE COM DESCRIÇÃO ---------- */
@@ -864,7 +870,9 @@ PG['icone-com-descricao'] = {
 
 /* ---------- TABELA (horário de funcionamento) ---------- */
 const TB_DIAS = [['Quarta-feira', '19h30 às 0h'], ['Quinta-feira', '19h30 às 0h'], ['Sexta-feira', '19h30 às 2h'], ['Sábado', '19h30 às 2h'], ['Domingo', '18h às 23h'], ['Segunda-feira', 'Fechado'], ['Terça-feira', 'Fechado']];
-const TB_BOX = 'inline-flex gap-sm rounded-m bg-bg-subtle p-m text-body';
+const TB_BOX = 'rounded-m bg-bg-subtle p-m text-body';
+const TB_TH = 'py-2xsm pr-sm text-left font-normal text-text-primary';
+const TB_TD = 'border-l border-border-default py-2xsm pl-sm text-feedback-danger';
 PG.tabela = {
   file: 'OpeningHours.jsx',
   controls: [
@@ -873,9 +881,9 @@ PG.tabela = {
   ],
   gallery: 'res',
   stage: () => 'light',
-  tree: s => { const l = TB_DIAS.slice(0, +s.dias); return N('div', TB_BOX + (s.res === 'desktop' ? ' w-[496px]' : ' w-[312px]') + ' max-w-full', {}, [N('div', 'flex flex-col gap-xsm text-text-primary', {}, l.map(d => N('span', '', {}, [d[0]]))), N('div', 'w-px self-stretch bg-border-default', {}), N('div', 'flex flex-col gap-xsm text-feedback-danger', {}, l.map(d => N('span', '', {}, [d[1]])))]); },
+  tree: s => { const l = TB_DIAS.slice(0, +s.dias); return N('figure', TB_BOX + (s.res === 'desktop' ? ' w-[496px]' : ' w-[312px]') + ' max-w-full', {}, [N('table', 'w-full', {}, [N('caption', 'sr-only', {}, ['Horário de funcionamento']), N('tbody', '', {}, l.map(d => N('tr', '', {}, [N('th', TB_TH, { scope: 'row' }, [d[0]]), N('td', TB_TD, {}, [d[1]])])))])]); },
   usage: s => `import { OpeningHours } from './OpeningHours';\n\n<OpeningHours${s.res === 'desktop' ? ' size="desktop"' : ''}\n  hours={[\n${TB_DIAS.slice(0, +s.dias).map(d => `    ['${d[0]}', '${d[1]}']`).join(',\n')},\n  ]}\n/>`,
-  source: () => `export function OpeningHours({ hours, size = 'mobile' }) {\n  const width = size === 'desktop' ? 'w-[496px]' : 'w-[312px]';\n  return (\n    <div className={'${TB_BOX} max-w-full ' + width}>\n      <div className="flex flex-col gap-xsm text-text-primary">\n        {hours.map(([day]) => <span key={day}>{day}</span>)}\n      </div>\n      <div className="w-px self-stretch bg-border-default" />\n      <div className="flex flex-col gap-xsm text-feedback-danger">\n        {hours.map(([day, time]) => <span key={day}>{time}</span>)}\n      </div>\n    </div>\n  );\n}\n`,
+  source: () => `const box = '${TB_BOX}';\nconst th = '${TB_TH}';\nconst td = '${TB_TD}';\n\nexport function OpeningHours({ hours, size = 'mobile' }) {\n  const width = size === 'desktop' ? 'w-[496px]' : 'w-[312px]';\n  return (\n    <figure className={box + ' max-w-full ' + width}>\n      <table className="w-full">\n        <caption className="sr-only">Horário de funcionamento</caption>\n        <tbody>\n          {hours.map(([day, time]) => (\n            <tr key={day}>\n              <th scope="row" className={th}>{day}</th>\n              <td className={td}>{time}</td>\n            </tr>\n          ))}\n        </tbody>\n      </table>\n    </figure>\n  );\n}\n`,
 };
 
 /* ======================================================================
@@ -884,9 +892,10 @@ PG.tabela = {
 Object.assign(K, { nota: 'musica-nota-musical.outline', drink: 'bar-e-lugares-drink.outline', compartilhar: 'botoes-de-controle-compartilhar.outline', copiar: 'botoes-de-controle-copiar.outline', coracao: 'botoes-de-controle-coracao.outline', coroa: 'objetos-coroa.outline', grupo: 'pessoa-grupo-de-pessoas.outline', sair: 'botoes-de-controle-sair.outline', mais: 'botoes-de-controle-bola-de-carne.outline', insta: 'redes-sociais-instagram.outline', tiktok: 'redes-sociais-tiktok.outline', youtube: 'redes-sociais-youtube.outline', face: 'redes-sociais-facebook.outline' });
 const bt = (variant, size, label, lead, extra) => { const t = btnTree({ variant, size, state: 'normal', label, leading: lead || '', trailing: '' }, false); if (extra) t.c += ' ' + extra; return t; };
 const TXT = (cls, t) => N('p', cls, {}, [t]);
-const dateBlock = (m, d, w) => N('div', 'flex w-[64px] shrink-0 flex-col items-center rounded-xsm border border-[#f7f7f7] bg-[#ffffff] px-sm py-xsm text-center', {}, [N('span', 'text-desc font-bold text-[#1a1a1a]', {}, [m]), N('span', 'font-display text-h6-m font-bold text-[#1a1a1a]', {}, [d]), N('span', 'text-desc text-[#4a4a4a]', {}, [w])]);
-const DATE_SRC = `<div className="flex w-[64px] shrink-0 flex-col items-center rounded-xsm border border-[#f7f7f7] bg-[#ffffff] px-sm py-xsm text-center">\n  <span className="text-desc font-bold text-[#1a1a1a]">{mes}</span>\n  <span className="font-display text-h6-m font-bold text-[#1a1a1a]">{dia}</span>\n  <span className="text-desc text-[#4a4a4a]">{semana}</span>\n</div>`;
-const iconDesc = (icon, t, cls) => N('span', ID_BASE + ' ' + cls, {}, [I(icon), t]);
+const HEAD = (tag, cls, t, id) => N(tag, cls, id ? { id } : {}, [t]);
+const dateBlock = (m, d, w, iso = '2026-02-02') => N('time', 'flex w-[64px] shrink-0 flex-col items-center rounded-xsm border border-[#f7f7f7] bg-[#ffffff] px-sm py-xsm text-center', { datetime: iso }, [N('span', 'text-desc font-bold text-[#1a1a1a]', {}, [m]), N('span', 'font-display text-h6-m font-bold text-[#1a1a1a]', {}, [d]), N('span', 'text-desc text-[#4a4a4a]', {}, [w])]);
+const DATE_SRC = `<time dateTime={iso} className="flex w-[64px] shrink-0 flex-col items-center rounded-xsm border border-[#f7f7f7] bg-[#ffffff] px-sm py-xsm text-center">\n  <span className="text-desc font-bold text-[#1a1a1a]">{mes}</span>\n  <span className="font-display text-h6-m font-bold text-[#1a1a1a]">{dia}</span>\n  <span className="text-desc text-[#4a4a4a]">{semana}</span>\n</time>`;
+const iconDesc = (icon, t, cls, tag, a) => N(tag || 'span', ID_BASE + ' ' + cls, a || {}, [I(icon), t]);
 
 /* ---------- LIST ---------- */
 PG.list = {
@@ -900,12 +909,12 @@ PG.list = {
   ],
   gallery: 'tipo',
   stage: () => 'light',
-  tree: s => N('div', 'flex w-[312px] max-w-full items-center gap-sm', {}, [
-    s.tipo === 'data' ? dateBlock('Fev', '02', 'Seg') : N('div', 'h-[90px] w-[88px] shrink-0 rounded-xsm bg-gradient-to-br from-action-primary via-dawn-500 to-dawn-900', { role: 'img', 'aria-label': 'Imagem do evento' }),
-    N('div', 'flex min-w-0 flex-col gap-2xsm', {}, [iconDesc(K.nota, s.eyebrow, 'text-text-secondary'), TXT('truncate text-body font-semibold text-text-primary', s.titulo), iconDesc(s.tipo === 'data' ? K.relogio : K.cal, s.info1, 'text-text-secondary'), iconDesc(K.pin, s.info2, 'text-text-secondary')]),
+  tree: s => N('article', 'flex w-[312px] max-w-full items-center gap-sm', {}, [
+    s.tipo === 'data' ? dateBlock('Fev', '02', 'Seg') : N('div', 'h-[90px] w-[88px] shrink-0 rounded-xsm bg-gradient-to-br from-action-primary via-dawn-500 to-dawn-900', { 'aria-hidden': 'true' }),
+    N('header', 'flex min-w-0 flex-col gap-2xsm', {}, [iconDesc(K.nota, s.eyebrow, 'text-text-secondary'), HEAD('h3', 'truncate text-body font-semibold text-text-primary', s.titulo), iconDesc(s.tipo === 'data' ? K.relogio : K.cal, s.info1, 'text-text-secondary'), iconDesc(K.pin, s.info2, 'text-text-secondary')]),
   ]),
-  usage: s => `import { ListItem } from './ListItem';\n\n<ListItem\n  ${s.tipo === 'data' ? 'date={{ month: \'Fev\', day: \'02\', weekday: \'Seg\' }}' : 'image="/eventos/campesinos.jpg"'}\n  eyebrow="${s.eyebrow}"\n  title="${s.titulo}"\n  lines={['${s.info1}', '${s.info2}']}\n/>`,
-  source: () => `${IMPORTS([K.nota, K.cal, K.pin])}const info = '${ID_BASE} text-text-secondary';\n\nexport function ListItem({ image, date, eyebrow, title, lines }) {\n  return (\n    <div className="flex w-[312px] max-w-full items-center gap-sm">\n      {date ? (\n        ${DATE_SRC.replace(/\n/g, '\n        ')}\n      ) : (\n        <img src={image} alt="" className="h-[90px] w-[88px] shrink-0 rounded-xsm object-cover" />\n      )}\n      <div className="flex min-w-0 flex-col gap-2xsm">\n        <span className={info}><${pascal(K.nota)} />{eyebrow}</span>\n        <p className="truncate text-body font-semibold text-text-primary">{title}</p>\n        <span className={info}><${pascal(K.cal)} />{lines[0]}</span>\n        <span className={info}><${pascal(K.pin)} />{lines[1]}</span>\n      </div>\n    </div>\n  );\n}\n`,
+  usage: s => `import { ListItem } from './ListItem';\n\n<ListItem\n  ${s.tipo === 'data' ? 'date={{ month: \'Fev\', day: \'02\', weekday: \'Seg\', iso: \'2026-02-02\' }}' : 'image="/eventos/campesinos.jpg"'}\n  eyebrow="${s.eyebrow}"\n  title="${s.titulo}"\n  lines={['${s.info1}', '${s.info2}']}\n/>`,
+  source: () => `${IMPORTS([K.nota, K.cal, K.pin])}const info = '${ID_BASE} text-text-secondary';\n\nexport function ListItem({ image, date, eyebrow, title, lines }) {\n  const { month: mes, day: dia, weekday: semana, iso } = date ?? {};\n  return (\n    <article className="flex w-[312px] max-w-full items-center gap-sm">\n      {date ? (\n        ${DATE_SRC.replace(/\n/g, '\n        ')}\n      ) : (\n        <img src={image} alt="" className="h-[90px] w-[88px] shrink-0 rounded-xsm object-cover" />\n      )}\n      <header className="flex min-w-0 flex-col gap-2xsm">\n        <span className={info}><${pascal(K.nota)} />{eyebrow}</span>\n        <h3 className="truncate text-body font-semibold text-text-primary">{title}</h3>\n        <span className={info}><${pascal(K.cal)} />{lines[0]}</span>\n        <span className={info}><${pascal(K.pin)} />{lines[1]}</span>\n      </header>\n    </article>\n  );\n}\n`,
 };
 
 /* ---------- FAQ ---------- */
@@ -919,11 +928,11 @@ PG.faq = {
     { k: 'open', label: 'Item aberto', type: 'seg', opts: [['-1', 'Nenhum'], ['0', '1º'], ['1', '2º'], ['2', '3º']], def: '0' },
   ],
   stage: () => 'light',
-  tree: s => { const d = s.res === 'desktop'; const acc = accTree(items(s), +s.open, 'Depois da compra, o ingresso fica salvo na sua conta.', d ? 'w-[496px]' : 'w-[312px]'); return d
-    ? N('section', 'flex w-[1440px] gap-[128px] bg-bg-subtle px-[212px] py-[96px]', {}, [N('div', 'flex w-[392px] shrink-0 flex-col gap-xsm', {}, [TXT('font-display text-h3-m font-bold text-text-primary', s.titulo), TXT('text-body-lg text-text-primary', s.sub)]), acc])
-    : N('section', 'flex w-[360px] max-w-full flex-col gap-lg bg-bg-subtle px-m py-4xlg', {}, [N('div', 'flex flex-col gap-xsm', {}, [TXT('font-display text-h3-m font-bold text-text-primary', s.titulo), TXT('text-body text-text-primary', s.sub)]), acc]); },
+  tree: (s, forced) => { const tid = uid('faq-titulo', forced); const d = s.res === 'desktop'; const acc = accTree(items(s), +s.open, 'Depois da compra, o ingresso fica salvo na sua conta.', d ? 'w-[496px]' : 'w-[312px]', 'faq'); return d
+    ? N('section', 'flex w-[1440px] gap-[128px] bg-bg-subtle px-[212px] py-[96px]', { 'aria-labelledby': tid }, [N('hgroup', 'flex w-[392px] shrink-0 flex-col gap-xsm', {}, [HEAD('h2', 'font-display text-h3-m font-bold text-text-primary', s.titulo, tid), TXT('text-body-lg text-text-primary', s.sub)]), acc])
+    : N('section', 'flex w-[360px] max-w-full flex-col gap-lg bg-bg-subtle px-m py-4xlg', { 'aria-labelledby': tid }, [N('hgroup', 'flex flex-col gap-xsm', {}, [HEAD('h2', 'font-display text-h3-m font-bold text-text-primary', s.titulo, tid), TXT('text-body text-text-primary', s.sub)]), acc]); },
   usage: s => `import { Faq } from './Faq';\n\n<Faq${s.res === 'desktop' ? ' size="desktop"' : ''}\n  title="${s.titulo}"\n  subtitle="${s.sub}"\n  items={[\n${items(s).map(t => `    { title: '${t}', content: '…' }`).join(',\n')},\n  ]}\n/>`,
-  source: () => `import { Accordion } from './Accordion';\n\nexport function Faq({ title, subtitle, items, size = 'mobile' }) {\n  const desktop = size === 'desktop';\n  return (\n    <section\n      className={\n        desktop\n          ? 'flex w-[1440px] gap-[128px] bg-bg-subtle px-[212px] py-[96px]'\n          : 'flex w-[360px] max-w-full flex-col gap-lg bg-bg-subtle px-m py-4xlg'\n      }\n    >\n      <div className={'flex flex-col gap-xsm ' + (desktop ? 'w-[392px] shrink-0' : '')}>\n        <h2 className="font-display text-h3-m font-bold text-text-primary">{title}</h2>\n        <p className={desktop ? 'text-body-lg text-text-primary' : 'text-body text-text-primary'}>{subtitle}</p>\n      </div>\n      <Accordion items={items} />\n    </section>\n  );\n}\n`,
+  source: () => `import { useId } from 'react';\nimport { Accordion } from './Accordion';\n\nexport function Faq({ title, subtitle, items, size = 'mobile' }) {\n  const desktop = size === 'desktop';\n  const titleId = useId();\n  return (\n    <section\n      aria-labelledby={titleId}\n      className={\n        desktop\n          ? 'flex w-[1440px] gap-[128px] bg-bg-subtle px-[212px] py-[96px]'\n          : 'flex w-[360px] max-w-full flex-col gap-lg bg-bg-subtle px-m py-4xlg'\n      }\n    >\n      <hgroup className={'flex flex-col gap-xsm ' + (desktop ? 'w-[392px] shrink-0' : '')}>\n        <h2 id={titleId} className="font-display text-h3-m font-bold text-text-primary">{title}</h2>\n        <p className={desktop ? 'text-body-lg text-text-primary' : 'text-body text-text-primary'}>{subtitle}</p>\n      </hgroup>\n      <Accordion items={items} />\n    </section>\n  );\n}\n`,
 };
 
 /* ---------- BANNER ---------- */
@@ -945,13 +954,14 @@ PG.banner = {
   gallery: 'estado',
   galleryApply: (s, v) => ({ label: BN[v].label }),
   stage: () => 'light',
-  tree: s => {
-    if (s.estado === 'sem') return N('div', BN_CARD + ' bg-bg-surface shadow-sm', {}, [N('div', 'flex items-center gap-sm', {}, [N('span', 'flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-xsm bg-gradient-to-br from-[#d43599] to-feedback-danger text-text-on-action [&>svg]:h-[40px] [&>svg]:w-[40px]', { 'aria-hidden': 'true' }, [I(K.pin)]), N('div', 'flex flex-col gap-2xsm', {}, [TXT('font-display text-h5-m font-bold text-text-primary', 'Encontre seus rolês'), TXT('text-desc-lg text-text-secondary', 'Veja quais eventos estão rolando agora na sua região.')])]), bt('primary', 'lg', s.label, K.sino, 'w-full')]);
+  tree: (s, forced) => {
+    const tid = uid('banner-titulo', forced);
+    if (s.estado === 'sem') return N('section', BN_CARD + ' bg-bg-surface shadow-sm', { 'aria-labelledby': tid }, [N('header', 'flex items-center gap-sm', {}, [N('span', 'flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-xsm bg-gradient-to-br from-[#d43599] to-feedback-danger text-text-on-action [&>svg]:h-[40px] [&>svg]:w-[40px]', { 'aria-hidden': 'true' }, [I(K.pin)]), N('hgroup', 'flex flex-col gap-2xsm', {}, [HEAD('h3', 'font-display text-h5-m font-bold text-text-primary', 'Encontre seus rolês', tid), TXT('text-desc-lg text-text-secondary', 'Veja quais eventos estão rolando agora na sua região.')])]), bt('primary', 'lg', s.label, K.sino, 'w-full')]);
     const perto = s.estado === 'perto';
-    return N('div', BN_CARD + ' ' + BN[s.estado].tone, {}, [N('div', 'flex items-center gap-sm', {}, [radar(), N('div', 'flex flex-col gap-2xsm', {}, [TXT('font-display text-h4-m font-bold text-text-on-action', 'Radar de rolês'), N('p', 'text-desc-lg text-text-on-action', {}, [N('strong', 'font-bold', {}, [`Mais de ${s.qtd} rolês`]), perto ? ' foram encontrados perto de você!' : ' encontrados neste lugar!'])])]), bt('primary-inverse', 'lg', s.label, K.sino, 'w-full')]);
+    return N('section', BN_CARD + ' ' + BN[s.estado].tone, { 'aria-labelledby': tid }, [N('header', 'flex items-center gap-sm', {}, [radar(), N('hgroup', 'flex flex-col gap-2xsm', {}, [HEAD('h3', 'font-display text-h4-m font-bold text-text-on-action', 'Radar de rolês', tid), N('p', 'text-desc-lg text-text-on-action', {}, [N('strong', 'font-bold', {}, [`Mais de ${s.qtd} rolês`]), perto ? ' foram encontrados perto de você!' : ' encontrados neste lugar!'])])]), bt('primary-inverse', 'lg', s.label, K.sino, 'w-full')]);
   },
   usage: s => `import { Banner } from './Banner';\n\n<Banner\n  estado="${s.estado}"${s.estado !== 'sem' ? `\n  total={${s.qtd}}` : ''}\n  onAction={handleAction}\n>\n  ${s.label}\n</Banner>`,
-  source: () => `${IMPORTS([K.pin, K.sino])}const card = '${BN_CARD}';\nconst bg = {\n  sem: 'bg-bg-surface shadow-sm',\n  cidade: '${BN.cidade.tone}',\n  perto: '${BN.perto.tone}',\n};\n\nexport function Banner({ estado = 'sem', total, onAction, children }) {\n  const inverse = estado !== 'sem';\n  return (\n    <div className={[card, bg[estado]].join(' ')}>\n      {inverse ? (\n        <div className="flex items-center gap-sm">\n          <Radar />\n          <div className="flex flex-col gap-2xsm">\n            <h3 className="font-display text-h4-m font-bold text-text-on-action">Radar de rolês</h3>\n            <p className="text-desc-lg text-text-on-action">\n              <strong>Mais de {total} rolês</strong>\n              {estado === 'perto' ? ' foram encontrados perto de você!' : ' encontrados neste lugar!'}\n            </p>\n          </div>\n        </div>\n      ) : (\n        <div className="flex items-center gap-sm">\n          <span className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-xsm bg-gradient-to-br from-[#d43599] to-feedback-danger text-text-on-action [&>svg]:h-[40px] [&>svg]:w-[40px]">\n            <${pascal(K.pin)} />\n          </span>\n          <div className="flex flex-col gap-2xsm">\n            <h3 className="font-display text-h5-m font-bold text-text-primary">Encontre seus rolês</h3>\n            <p className="text-desc-lg text-text-secondary">Veja quais eventos estão rolando agora na sua região.</p>\n          </div>\n        </div>\n      )}\n      <Button variant={inverse ? 'primary-inverse' : 'primary'} size="lg" className="w-full" onClick={onAction} leadingIcon={<${pascal(K.sino)} />}>\n        {children}\n      </Button>\n    </div>\n  );\n}\n`,
+  source: () => `import { useId } from 'react';\n${IMPORTS([K.pin, K.sino]).replace(/\n\n$/, '\n')}\nconst card = '${BN_CARD}';\nconst bg = {\n  sem: 'bg-bg-surface shadow-sm',\n  cidade: '${BN.cidade.tone}',\n  perto: '${BN.perto.tone}',\n};\n\nexport function Banner({ estado = 'sem', total, onAction, children }) {\n  const inverse = estado !== 'sem';\n  const titleId = useId();\n  return (\n    <section aria-labelledby={titleId} className={[card, bg[estado]].join(' ')}>\n      {inverse ? (\n        <header className="flex items-center gap-sm">\n          <Radar />\n          <hgroup className="flex flex-col gap-2xsm">\n            <h3 id={titleId} className="font-display text-h4-m font-bold text-text-on-action">Radar de rolês</h3>\n            <p className="text-desc-lg text-text-on-action">\n              <strong>Mais de {total} rolês</strong>\n              {estado === 'perto' ? ' foram encontrados perto de você!' : ' encontrados neste lugar!'}\n            </p>\n          </hgroup>\n        </header>\n      ) : (\n        <header className="flex items-center gap-sm">\n          <span className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-xsm bg-gradient-to-br from-[#d43599] to-feedback-danger text-text-on-action [&>svg]:h-[40px] [&>svg]:w-[40px]">\n            <${pascal(K.pin)} />\n          </span>\n          <hgroup className="flex flex-col gap-2xsm">\n            <h3 id={titleId} className="font-display text-h5-m font-bold text-text-primary">Encontre seus rolês</h3>\n            <p className="text-desc-lg text-text-secondary">Veja quais eventos estão rolando agora na sua região.</p>\n          </hgroup>\n        </header>\n      )}\n      <Button variant={inverse ? 'primary-inverse' : 'primary'} size="lg" className="w-full" onClick={onAction} leadingIcon={<${pascal(K.sino)} />}>\n        {children}\n      </Button>\n    </section>\n  );\n}\n`,
 };
 
 /* ======================= Lote 3: Card, Modal, Drawer, Menu, Header, Footer, Adsense, Carrossel, Logo ======================= */
@@ -969,13 +979,13 @@ const cardSize = s => {
   return '';
 };
 const cardTree = s => {
-  if (s.tipo === 'preco') return N('div', 'flex items-center gap-xsm', {}, [N('div', 'flex flex-col', {}, [TXT('text-desc text-text-secondary', s.preco === 'lote' ? '1º lote' : 'A partir de'), TXT('text-desc-lg font-bold text-text-primary', s.preco === 'gratis' ? 'Grátis' : s.preco === 'lote' ? 'R$ 30,00' : 'R$ 45,00')]), bt('primary', 'sm', 'Comprar')]);
-  if (s.tipo === 'produto') return N('div', 'flex w-[200px] flex-col gap-xsm', {}, [N('div', 'relative h-[120px] w-full rounded-xsm ' + IMG_BG, { role: 'img', 'aria-label': 'Imagem do produto' }, [s.badge && N('span', 'absolute left-xsm top-xsm rounded-pill bg-feedback-danger px-xsm py-2xsm text-desc font-bold text-text-on-action', {}, ['-20%'])]), TXT('text-desc text-text-secondary', s.sub), TXT('text-desc-lg font-semibold text-text-primary', s.titulo), TXT('font-display text-h5-m font-bold text-text-primary', 'R$ 45,00')]);
-  if (s.tipo === 'small') return N('div', 'flex w-[120px] flex-col gap-2xsm', {}, [N('div', 'relative h-[120px] w-full overflow-hidden rounded-3xsm ' + IMG_BG, { role: 'img', 'aria-label': 'Imagem' }, [s.badge && N('div', 'absolute inset-x-0 bottom-0 bg-[#05051c]/40 p-xsm backdrop-blur-sm', {}, [TXT('font-display text-h6-m font-bold text-text-on-action', s.titulo)])]), !s.badge && TXT('font-display text-h6-m font-bold text-text-primary', s.titulo)]);
+  if (s.tipo === 'preco') return N('div', 'flex items-center gap-xsm', { role: 'group', 'aria-label': 'Preço' }, [N('p', 'flex flex-col', {}, [N('span', 'text-desc text-text-secondary', {}, [s.preco === 'lote' ? '1º lote' : 'A partir de']), N('strong', 'text-desc-lg font-bold text-text-primary', {}, [s.preco === 'gratis' ? 'Grátis' : s.preco === 'lote' ? 'R$ 30,00' : 'R$ 45,00'])]), bt('primary', 'sm', 'Comprar')]);
+  if (s.tipo === 'produto') return N('article', 'flex w-[200px] flex-col gap-xsm', {}, [N('figure', 'relative h-[120px] w-full rounded-xsm ' + IMG_BG, {}, [s.badge && N('span', 'absolute left-xsm top-xsm rounded-pill bg-feedback-danger px-xsm py-2xsm text-desc font-bold text-text-on-action', {}, ['-20%'])]), TXT('text-desc text-text-secondary', s.sub), HEAD('h3', 'text-desc-lg font-semibold text-text-primary', s.titulo), TXT('font-display text-h5-m font-bold text-text-primary', 'R$ 45,00')]);
+  if (s.tipo === 'small') return N('article', 'flex w-[120px] flex-col gap-2xsm', {}, [N('figure', 'relative h-[120px] w-full overflow-hidden rounded-3xsm ' + IMG_BG, {}, [s.badge && N('figcaption', 'absolute inset-x-0 bottom-0 bg-[#05051c]/40 p-xsm backdrop-blur-sm', {}, [HEAD('h3', 'font-display text-h6-m font-bold text-text-on-action', s.titulo)])]), !s.badge && HEAD('h3', 'font-display text-h6-m font-bold text-text-primary', s.titulo)]);
   const art = s.tipo === 'artista';
-  return N('div', 'relative flex items-end overflow-hidden rounded-xsm ' + IMG_BG + ' ' + cardSize(s) + (art && s.badge ? ' ring-2 ring-feedback-danger' : ''), { role: 'img', 'aria-label': 'Imagem de ' + s.titulo }, [
+  return N('article', 'relative flex items-end overflow-hidden rounded-xsm ' + IMG_BG + ' ' + cardSize(s) + (art && s.badge ? ' ring-2 ring-feedback-danger' : ''), {}, [
     N('div', 'absolute inset-0 ' + SHADE, {}),
-    N('div', 'relative flex flex-col gap-2xsm p-m text-text-on-action', {}, [art && s.badge && N('span', 'w-fit rounded-pill bg-feedback-danger px-xsm py-2xsm text-desc font-bold', {}, ['Em destaque']), TXT('text-desc', s.sub), TXT('font-display text-h6-m font-bold', s.titulo), TXT('text-desc-lg', art ? 'Samba • Rock' : 'Vila Madalena')]),
+    N('div', 'relative flex flex-col gap-2xsm p-m text-text-on-action', {}, [art && s.badge && N('span', 'w-fit rounded-pill bg-feedback-danger px-xsm py-2xsm text-desc font-bold', {}, ['Em destaque']), TXT('text-desc', s.sub), HEAD('h3', 'font-display text-h6-m font-bold', s.titulo), TXT('text-desc-lg', art ? 'Samba • Rock' : 'Vila Madalena')]),
   ]);
 };
 PG.card = {
@@ -990,24 +1000,29 @@ PG.card = {
   gallery: 'tipo',
   stage: () => 'light',
   tree: cardTree,
-  usage: s => `import { Card } from './Card';\n\n<Card\n  tipo="${s.tipo}"\n  ${s.tipo === 'estab' || s.tipo === 'artista' ? `listagem="${s.listagem}"\n  ` : ''}${s.tipo === 'preco' ? `preco="${s.preco}"` : `titulo="${s.titulo}"\n  subtitulo="${s.sub}"\n  imagem="/imagens/card.jpg"`}${s.badge && s.tipo !== 'preco' ? '\n  destaque' : ''}\n/>`,
-  source: () => `const image = '${SHADE}';\n\n/* Cards com imagem de fundo (Estabelecimento e Artista) */\nexport function Card({ titulo, subtitulo, imagem, listagem = 'vertical', destaque }) {\n  const size = listagem === 'horizontal' ? 'h-[256px] w-[200px]' : 'h-[187px] w-[312px]';\n  return (\n    <article\n      className={\`relative flex items-end overflow-hidden rounded-xsm bg-cover bg-center \${size} \${destaque ? 'ring-2 ring-feedback-danger' : ''}\`}\n      style={{ backgroundImage: \`url(\${imagem})\` }}\n    >\n      <div className={\`absolute inset-0 \${image}\`} />\n      <div className="relative flex flex-col gap-2xsm p-m text-text-on-action">\n        <p className="text-desc">{subtitulo}</p>\n        <h3 className="font-display text-h6-m font-bold">{titulo}</h3>\n      </div>\n    </article>\n  );\n}\n`,
+  usage: s => `import { Card } from './Card';\n\n<Card\n  tipo="${s.tipo}"\n  ${s.tipo === 'preco' ? `preco="${s.preco}"\n  onBuy={handleBuy}` : `titulo="${s.titulo}"\n  subtitulo="${s.sub}"\n  imagem="/imagens/card.jpg"${s.tipo === 'produto' ? '\n  preco="R$ 45,00"' : ''}${s.badge ? '\n  destaque' : ''}`}\n/>`,
+  source: () => `import { Button } from './Button';\n\nconst PRECOS = {\n  gratis: ['A partir de', 'Grátis'],\n  fixo: ['A partir de', 'R$ 45,00'],\n  lote: ['1º lote', 'R$ 30,00'],\n};\n\nexport function Card({ tipo = 'produto', titulo, subtitulo, imagem, preco, destaque, onBuy }) {\n  if (tipo === 'preco') {\n    const [rotulo, valor] = PRECOS[preco];\n    return (\n      <div role="group" aria-label="Preço" className="flex items-center gap-xsm">\n        <p className="flex flex-col">\n          <span className="text-desc text-text-secondary">{rotulo}</span>\n          <strong className="text-desc-lg font-bold text-text-primary">{valor}</strong>\n        </p>\n        <Button variant="primary" size="sm" onClick={onBuy}>Comprar</Button>\n      </div>\n    );\n  }\n\n  if (tipo === 'small') {\n    return (\n      <article className="flex w-[120px] flex-col gap-2xsm">\n        <figure className="relative h-[120px] w-full overflow-hidden rounded-3xsm">\n          <img src={imagem} alt="" className="h-full w-full object-cover" />\n          {destaque && (\n            <figcaption className="absolute inset-x-0 bottom-0 bg-[#05051c]/40 p-xsm backdrop-blur-sm">\n              <h3 className="font-display text-h6-m font-bold text-text-on-action">{titulo}</h3>\n            </figcaption>\n          )}\n        </figure>\n        {!destaque && <h3 className="font-display text-h6-m font-bold text-text-primary">{titulo}</h3>}\n      </article>\n    );\n  }\n\n  return (\n    <article className="flex w-[200px] flex-col gap-xsm">\n      <figure className="relative h-[120px] w-full overflow-hidden rounded-xsm">\n        <img src={imagem} alt="" className="h-full w-full object-cover" />\n        {destaque && (\n          <span className="absolute left-xsm top-xsm rounded-pill bg-feedback-danger px-xsm py-2xsm text-desc font-bold text-text-on-action">\n            -20%\n          </span>\n        )}\n      </figure>\n      <p className="text-desc text-text-secondary">{subtitulo}</p>\n      <h3 className="text-desc-lg font-semibold text-text-primary">{titulo}</h3>\n      <p className="font-display text-h5-m font-bold text-text-primary">{preco}</p>\n    </article>\n  );\n}\n`,
 };
 
 /* ---------- EVENTCARD ---------- */
+const EC_LINK = 'outline-none after:absolute after:inset-0';
+const EC_FOCUS = 'has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-text-primary';
+const EC_ISO = '2026-10-19T14:00';
 const ecTree = s => {
-  const sob = iconDesc('musica-banda.outline', s.sub, s.listagem === 'vertical' ? 'text-text-secondary' : 'text-text-on-action');
-  const dat = iconDesc(K.cal, s.data, s.listagem === 'vertical' ? 'text-text-secondary' : 'text-text-on-action');
-  const loc = iconDesc(K.pin, s.local, s.listagem === 'vertical' ? 'text-text-secondary' : 'text-text-on-action');
-  if (s.listagem === 'vertical') return N('a', 'flex w-[312px] max-w-full items-center gap-sm', { href: '#' }, [
-    N('div', 'h-[90px] w-[88px] shrink-0 ' + IMG_BG, { role: 'img', 'aria-label': 'Imagem de ' + s.titulo }),
-    N('div', 'flex min-w-0 flex-1 flex-col gap-2xsm', {}, [sob, TXT('truncate text-body font-semibold text-text-primary', s.titulo), dat, loc])], { p: { 'data-noop': '1' } });
-  return N('a', 'relative flex h-[252px] w-[200px] items-end overflow-hidden rounded-xsm ' + IMG_BG + (s.highlight ? ' ring-4 ring-inset ring-feedback-danger' : ''), { href: '#', role: 'img', 'aria-label': 'Imagem de ' + s.titulo }, [
-    N('div', 'absolute inset-0 ' + SHADE, {}),
-    N('div', 'relative flex w-full flex-col gap-sm p-m text-text-on-action', {}, [
+  const v = s.listagem === 'vertical', tone = v ? 'text-text-secondary' : 'text-text-on-action';
+  const sob = iconDesc('musica-banda.outline', s.sub, tone);
+  const dat = iconDesc(K.cal, s.data, tone, 'time', { datetime: EC_ISO });
+  const loc = iconDesc(K.pin, s.local, tone);
+  const titulo = (cls) => N('h3', cls, {}, [N('a', EC_LINK, { href: '#' }, [s.titulo], { p: { 'data-noop': '1' } })]);
+  if (v) return N('article', 'relative flex w-[312px] max-w-full items-center gap-sm ' + EC_FOCUS, {}, [
+    N('div', 'h-[90px] w-[88px] shrink-0 ' + IMG_BG, { 'aria-hidden': 'true' }),
+    N('header', 'flex min-w-0 flex-1 flex-col gap-2xsm', {}, [sob, titulo('truncate text-body font-semibold text-text-primary'), dat, loc])]);
+  return N('article', 'relative flex h-[252px] w-[200px] items-end overflow-hidden rounded-xsm ' + IMG_BG + (s.highlight ? ' ring-4 ring-inset ring-feedback-danger' : '') + ' ' + EC_FOCUS, {}, [
+    N('div', 'absolute inset-0 ' + SHADE, { 'aria-hidden': 'true' }),
+    N('header', 'z-10 flex w-full flex-col gap-sm p-m text-text-on-action', {}, [
       s.badge && N('span', BADGE_BASE + ' w-fit ' + BADGE.brand.tone, {}, [I(K.pin), 'Distância']),
-      s.brasao && N('div', 'flex items-center gap-xsm', {}, [N('span', 'h-[56px] w-[56px] rounded-pill bg-bg-surface', { 'aria-hidden': 'true' }), N('span', 'text-icon-on-action [&>svg]:h-m [&>svg]:w-m', { 'aria-hidden': 'true' }, [I(K.fechar)]), N('span', 'h-[56px] w-[56px] rounded-pill bg-bg-surface', { 'aria-hidden': 'true' })]),
-      N('div', 'flex flex-col gap-2xsm', {}, [sob, TXT('text-body font-semibold', s.titulo), dat, loc])])], { p: { 'data-noop': '1' } });
+      s.brasao && N('div', 'flex items-center gap-xsm', { 'aria-hidden': 'true' }, [N('span', 'h-[56px] w-[56px] rounded-pill bg-bg-surface', {}), N('span', 'text-icon-on-action [&>svg]:h-m [&>svg]:w-m', {}, [I(K.fechar)]), N('span', 'h-[56px] w-[56px] rounded-pill bg-bg-surface', {})]),
+      N('div', 'flex flex-col gap-2xsm', {}, [sob, titulo('text-body font-semibold'), dat, loc])])]);
 };
 PG.eventcard = {
   file: 'EventCard.jsx',
@@ -1024,8 +1039,8 @@ PG.eventcard = {
   gallery: 'listagem',
   stage: s => s.listagem === 'vertical' ? 'light' : 'gray',
   tree: ecTree,
-  usage: s => `import { EventCard } from './EventCard';\n\n<EventCard\n  ${s.listagem === 'vertical' ? 'listing="vertical"\n  ' : ''}title="${s.titulo}"\n  eyebrow="${s.sub}"\n  date="${s.data}"\n  place="${s.local}"\n  image="/imagens/evento.jpg"${s.listagem === 'horizontal' && s.highlight ? '\n  highlight' : ''}${s.listagem === 'horizontal' && !s.badge ? '\n  badge={false}' : ''}\n/>`,
-  source: () => `// Horizontal: carrosséis. Vertical: agenda de artista, de estabelecimento e listagens.\nconst layouts = {\n  horizontal:\n    'relative flex h-[252px] w-[200px] items-end overflow-hidden rounded-xsm bg-cover bg-center text-text-on-action',\n  vertical: 'flex w-[312px] max-w-full items-center gap-sm text-text-primary',\n};\n\nexport function EventCard({ listing = 'horizontal', highlight, title, eyebrow, date, place, image, href = '#' }) {\n  if (listing === 'vertical') {\n    return (\n      <a href={href} className={layouts.vertical}>\n        <img src={image} alt="" className="h-[90px] w-[88px] shrink-0 object-cover" />\n        <div className="flex min-w-0 flex-1 flex-col gap-2xsm">\n          <p className="text-desc text-text-secondary">{eyebrow}</p>\n          <h3 className="truncate text-body font-semibold">{title}</h3>\n          <p className="text-desc text-text-secondary">{date}</p>\n          <p className="text-desc text-text-secondary">{place}</p>\n        </div>\n      </a>\n    );\n  }\n  return (\n    <a\n      href={href}\n      style={{ backgroundImage: \`url(\${image})\` }}\n      className={\`\${layouts.horizontal} \${highlight ? 'ring-4 ring-inset ring-feedback-danger' : ''}\`}\n    >\n      <div className="absolute inset-0 bg-gradient-to-t from-[#05051c]/90 via-[#05051c]/30 to-transparent" />\n      <div className="relative flex w-full flex-col gap-2xsm p-m">\n        <p className="text-desc">{eyebrow}</p>\n        <h3 className="text-body font-semibold">{title}</h3>\n        <p className="text-desc">{date}</p>\n        <p className="text-desc">{place}</p>\n      </div>\n    </a>\n  );\n}\n`,
+  usage: s => `import { EventCard } from './EventCard';\n\n<EventCard\n  ${s.listagem === 'vertical' ? 'listing="vertical"\n  ' : ''}title="${s.titulo}"\n  eyebrow="${s.sub}"\n  date="${s.data}"\n  dateTime="2026-10-19T14:00"\n  place="${s.local}"\n  image="/imagens/evento.jpg"${s.listagem === 'horizontal' && s.highlight ? '\n  highlight' : ''}${s.listagem === 'horizontal' && !s.badge ? '\n  badge={false}' : ''}\n/>`,
+  source: () => `// Horizontal: carrosséis. Vertical: agenda de artista, de estabelecimento e listagens.\n// O card é um <article>. O link fica no título e cobre o card todo (after:absolute).\nconst link = 'outline-none after:absolute after:inset-0';\nconst focus =\n  'has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-text-primary';\nconst layouts = {\n  horizontal:\n    'relative flex h-[252px] w-[200px] items-end overflow-hidden rounded-xsm bg-cover bg-center text-text-on-action',\n  vertical: 'relative flex w-[312px] max-w-full items-center gap-sm text-text-primary',\n};\n\nexport function EventCard({\n  listing = 'horizontal',\n  highlight,\n  title,\n  eyebrow,\n  date,\n  dateTime,\n  place,\n  image,\n  href = '#',\n}) {\n  if (listing === 'vertical') {\n    return (\n      <article className={\`\${layouts.vertical} \${focus}\`}>\n        <img src={image} alt="" className="h-[90px] w-[88px] shrink-0 object-cover" />\n        <header className="flex min-w-0 flex-1 flex-col gap-2xsm">\n          <p className="text-desc text-text-secondary">{eyebrow}</p>\n          <h3 className="truncate text-body font-semibold">\n            <a href={href} className={link}>{title}</a>\n          </h3>\n          <time dateTime={dateTime} className="text-desc text-text-secondary">{date}</time>\n          <p className="text-desc text-text-secondary">{place}</p>\n        </header>\n      </article>\n    );\n  }\n  return (\n    <article\n      style={{ backgroundImage: \`url(\${image})\` }}\n      className={\`\${layouts.horizontal} \${focus} \${highlight ? 'ring-4 ring-inset ring-feedback-danger' : ''}\`}\n    >\n      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#05051c]/90 via-[#05051c]/30 to-transparent" />\n      <header className="z-10 flex w-full flex-col gap-2xsm p-m">\n        <p className="text-desc">{eyebrow}</p>\n        <h3 className="text-body font-semibold">\n          <a href={href} className={link}>{title}</a>\n        </h3>\n        <time dateTime={dateTime} className="text-desc">{date}</time>\n        <p className="text-desc">{place}</p>\n      </header>\n    </article>\n  );\n}\n`,
 };
 
 /* ---------- MODAL (Ticket de resumo) ---------- */
@@ -1041,16 +1056,16 @@ PG.modal = {
   ],
   gallery: 'acao',
   stage: () => 'gray',
-  tree: s => N('div', 'flex w-[312px] max-w-full flex-col gap-m rounded-m bg-bg-surface p-m shadow-sm', {}, [
-    N('div', 'flex items-start justify-between gap-sm', {}, [TXT('font-display text-h4-m font-bold text-text-primary', s.titulo), N('button', 'text-icon-default [&>svg]:h-m [&>svg]:w-m', { type: 'button', 'aria-label': 'Fechar' }, [I(K.fechar)], { p: { 'data-noop': '1' } })]),
+  tree: (s, forced) => { const tid = uid('modal-titulo', forced); return N('div', 'flex w-[312px] max-w-full flex-col gap-m rounded-m bg-bg-surface p-m shadow-sm', { role: 'dialog', 'aria-labelledby': tid }, [
+    N('header', 'flex items-start justify-between gap-sm', {}, [HEAD('h2', 'font-display text-h4-m font-bold text-text-primary', s.titulo, tid), N('button', 'text-icon-default [&>svg]:h-m [&>svg]:w-m', { type: 'button', 'aria-label': 'Fechar' }, [I(K.fechar)], { p: { 'data-noop': '1' } })]),
     TXT('text-body text-text-primary', s.evento),
-    N('div', 'flex flex-col gap-xsm', {}, [iconDesc(K.cal, s.data, 'text-text-secondary'), iconDesc(K.pin, s.local, 'text-text-secondary')]),
-    N('div', 'h-px w-full border-t border-dashed border-border-default', {}),
-    N('div', 'flex items-center justify-between', {}, [TXT('text-desc-lg text-text-secondary', 'Total'), TXT('font-display text-h6-m font-bold text-text-primary', s.total)]),
-    N('div', 'flex gap-xsm', {}, [bt('secondary', 'lg', 'Voltar', '', 'flex-1'), bt('primary', 'lg', s.acao === 'agendar' ? 'Agendar' : 'Ver ingressos', s.acao === 'agendar' ? K.cal : K.pix, 'flex-1')]),
-  ]),
+    N('ul', 'flex flex-col gap-xsm', { role: 'list' }, [N('li', '', {}, [iconDesc(K.cal, s.data, 'text-text-secondary')]), N('li', '', {}, [iconDesc(K.pin, s.local, 'text-text-secondary')])]),
+    N('hr', 'w-full border-t border-dashed border-border-default', {}),
+    N('dl', 'flex items-center justify-between', {}, [N('dt', 'text-desc-lg text-text-secondary', {}, ['Total']), N('dd', 'font-display text-h6-m font-bold text-text-primary', {}, [s.total])]),
+    N('footer', 'flex gap-xsm', {}, [bt('secondary', 'lg', 'Voltar', '', 'flex-1'), bt('primary', 'lg', s.acao === 'agendar' ? 'Agendar' : 'Ver ingressos', s.acao === 'agendar' ? K.cal : K.pix, 'flex-1')]),
+  ], { x: { 'aria-modal': 'true' } }); },
   usage: s => `import { TicketModal } from './TicketModal';\n\n<TicketModal\n  open={open}\n  onClose={() => setOpen(false)}\n  title="${s.titulo}"\n  event="${s.evento}"\n  date="${s.data}"\n  place="${s.local}"\n  total="${s.total}"\n  action="${s.acao}"\n/>`,
-  source: () => `${IMPORTS([K.fechar, K.cal, K.pin])}export function TicketModal({ open, onClose, title, event, date, place, total, action, onAction }) {\n  if (!open) return null;\n  return (\n    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05051c]/60 p-m" onClick={onClose}>\n      <div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}\n        className="flex w-[312px] max-w-full flex-col gap-m rounded-m bg-bg-surface p-m shadow-sm">\n        <div className="flex items-start justify-between gap-sm">\n          <h2 className="font-display text-h4-m font-bold text-text-primary">{title}</h2>\n          <button type="button" aria-label="Fechar" onClick={onClose} className="text-icon-default [&>svg]:h-m [&>svg]:w-m"><${pascal(K.fechar)} /></button>\n        </div>\n        <p className="text-body text-text-primary">{event}</p>\n        <p className="inline-flex items-center gap-2xsm text-desc text-text-secondary"><${pascal(K.cal)} />{date}</p>\n        <p className="inline-flex items-center gap-2xsm text-desc text-text-secondary"><${pascal(K.pin)} />{place}</p>\n        <div className="h-px w-full border-t border-dashed border-border-default" />\n        <div className="flex items-center justify-between">\n          <span className="text-desc-lg text-text-secondary">Total</span>\n          <strong className="font-display text-h6-m font-bold text-text-primary">{total}</strong>\n        </div>\n        <div className="flex gap-xsm">\n          <Button variant="secondary" size="lg" className="flex-1" onClick={onClose}>Voltar</Button>\n          <Button variant="primary" size="lg" className="flex-1" onClick={onAction}>{action === 'agendar' ? 'Agendar' : 'Ver ingressos'}</Button>\n        </div>\n      </div>\n    </div>\n  );\n}\n`,
+  source: () => `import { useId } from 'react';\n${IMPORTS([K.fechar, K.cal, K.pin]).replace(/\n\n$/, '\n')}\nexport function TicketModal({ open, onClose, title, event, date, place, total, action, onAction }) {\n  const titleId = useId();\n  if (!open) return null;\n  // Ao abrir, leve o foco para dentro do diálogo e devolva-o ao gatilho ao fechar.\n  return (\n    <div\n      role="presentation"\n      className="fixed inset-0 z-50 flex items-center justify-center bg-[#05051c]/60 p-m"\n      onClick={onClose}\n      onKeyDown={(e) => e.key === 'Escape' && onClose()}\n    >\n      <div role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={(e) => e.stopPropagation()}\n        className="flex w-[312px] max-w-full flex-col gap-m rounded-m bg-bg-surface p-m shadow-sm">\n        <header className="flex items-start justify-between gap-sm">\n          <h2 id={titleId} className="font-display text-h4-m font-bold text-text-primary">{title}</h2>\n          <button type="button" aria-label="Fechar" onClick={onClose} className="text-icon-default [&>svg]:h-m [&>svg]:w-m"><${pascal(K.fechar)} /></button>\n        </header>\n        <p className="text-body text-text-primary">{event}</p>\n        <ul role="list" className="flex flex-col gap-xsm">\n          <li className="inline-flex items-center gap-2xsm text-desc text-text-secondary"><${pascal(K.cal)} />{date}</li>\n          <li className="inline-flex items-center gap-2xsm text-desc text-text-secondary"><${pascal(K.pin)} />{place}</li>\n        </ul>\n        <hr className="w-full border-t border-dashed border-border-default" />\n        <dl className="flex items-center justify-between">\n          <dt className="text-desc-lg text-text-secondary">Total</dt>\n          <dd className="font-display text-h6-m font-bold text-text-primary">{total}</dd>\n        </dl>\n        <footer className="flex gap-xsm">\n          <Button variant="secondary" size="lg" className="flex-1" onClick={onClose}>Voltar</Button>\n          <Button variant="primary" size="lg" className="flex-1" onClick={onAction}>{action === 'agendar' ? 'Agendar' : 'Ver ingressos'}</Button>\n        </footer>\n      </div>\n    </div>\n  );\n}\n`,
 };
 
 /* ---------- DRAWER ---------- */
@@ -1068,18 +1083,19 @@ PG.drawer = {
   gallery: 'estado',
   galleryApply: (s, v) => ({ titulo: DR[v] }),
   stage: () => 'gray',
-  tree: s => {
+  tree: (s, forced) => {
+    const tid = uid('drawer-titulo', forced);
     const w = s.res === 'desktop' ? 'w-[600px]' : 'w-[360px]';
     const icon = s.estado === 'carregando' ? spinner() : s.estado === 'sucesso' ? N('span', 'text-feedback-success [&>svg]:h-[56px] [&>svg]:w-[56px]', { 'aria-hidden': 'true' }, [I(K.checkc)]) : s.estado === 'erro' ? N('span', 'text-feedback-danger [&>svg]:h-[56px] [&>svg]:w-[56px]', { 'aria-hidden': 'true' }, [I(K.fechar)]) : N('span', 'text-action-primary [&>svg]:h-[56px] [&>svg]:w-[56px]', { 'aria-hidden': 'true' }, [I(K.pin)]);
-    return N('div', `relative flex ${w} max-w-full flex-col items-center gap-m rounded-t-m bg-bg-surface px-m py-4xlg text-center shadow-sm`, { role: 'dialog' }, [
+    return N('div', `relative flex ${w} max-w-full flex-col items-center gap-m rounded-t-m bg-bg-surface px-m py-4xlg text-center shadow-sm`, { role: 'dialog', 'aria-labelledby': tid, 'aria-busy': s.estado === 'carregando' ? 'true' : null }, [
       s.estado === 'localizacao' && N('button', 'absolute right-m top-m text-icon-default [&>svg]:h-m [&>svg]:w-m', { type: 'button', 'aria-label': 'Fechar' }, [I(K.fechar)], { p: { 'data-noop': '1' } }),
-      icon, TXT('font-display text-h4-m font-bold text-text-primary', s.titulo), s.estado !== 'carregando' && TXT('text-body text-text-secondary', s.desc),
+      icon, HEAD('h2', 'font-display text-h4-m font-bold text-text-primary', s.titulo, tid), s.estado !== 'carregando' && TXT('text-body text-text-secondary', s.desc),
       s.estado === 'erro' && bt('primary', 'lg', 'Tentar novamente', '', 'w-full'),
       s.estado === 'localizacao' && N('div', 'flex w-full flex-col gap-xsm', {}, [bt('primary', 'lg', 'Permitir localização', K.pin, 'w-full'), bt('ghost', 'lg', 'Agora não', '', 'w-full')]),
-    ]);
+    ], { x: { 'aria-modal': 'true' } });
   },
   usage: s => `import { Drawer } from './Drawer';\n\n<Drawer\n  open={open}\n  onClose={() => setOpen(false)}\n  estado="${s.estado}"\n  title="${s.titulo}"\n  description="${s.desc}"\n/>`,
-  source: () => `${IMPORTS([K.checkc, K.fechar, K.pin])}export function Drawer({ open, onClose, estado, title, description, onAction }) {\n  if (!open) return null;\n  return (\n    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#05051c]/60" onClick={onClose}>\n      <div role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}\n        className="relative flex w-[360px] max-w-full flex-col items-center gap-m rounded-t-m bg-bg-surface px-m py-4xlg text-center shadow-sm">\n        {estado === 'carregando' && <Spinner />}\n        {estado === 'sucesso' && <span className="text-feedback-success [&>svg]:h-[56px] [&>svg]:w-[56px]"><${pascal(K.checkc)} /></span>}\n        {estado === 'erro' && <span className="text-feedback-danger [&>svg]:h-[56px] [&>svg]:w-[56px]"><${pascal(K.fechar)} /></span>}\n        <h2 className="font-display text-h4-m font-bold text-text-primary">{title}</h2>\n        {estado !== 'carregando' && <p className="text-body text-text-secondary">{description}</p>}\n        {estado === 'erro' && <Button variant="primary" size="lg" className="w-full" onClick={onAction}>Tentar novamente</Button>}\n      </div>\n    </div>\n  );\n}\n`,
+  source: () => `import { useId } from 'react';\n${IMPORTS([K.checkc, K.fechar, K.pin]).replace(/\n\n$/, '\n')}\nexport function Drawer({ open, onClose, estado, title, description, onAction }) {\n  const titleId = useId();\n  if (!open) return null;\n  // Ao abrir, leve o foco para dentro do drawer e devolva-o ao gatilho ao fechar.\n  return (\n    <div\n      role="presentation"\n      className="fixed inset-0 z-50 flex items-end justify-center bg-[#05051c]/60"\n      onClick={onClose}\n      onKeyDown={(e) => e.key === 'Escape' && onClose()}\n    >\n      <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={estado === 'carregando'} onClick={(e) => e.stopPropagation()}\n        className="relative flex w-[360px] max-w-full flex-col items-center gap-m rounded-t-m bg-bg-surface px-m py-4xlg text-center shadow-sm">\n        {estado === 'carregando' && <Spinner />}\n        {estado === 'sucesso' && <span aria-hidden="true" className="text-feedback-success [&>svg]:h-[56px] [&>svg]:w-[56px]"><${pascal(K.checkc)} /></span>}\n        {estado === 'erro' && <span aria-hidden="true" className="text-feedback-danger [&>svg]:h-[56px] [&>svg]:w-[56px]"><${pascal(K.fechar)} /></span>}\n        <h2 id={titleId} className="font-display text-h4-m font-bold text-text-primary">{title}</h2>\n        {estado !== 'carregando' && <p className="text-body text-text-secondary">{description}</p>}\n        {estado === 'erro' && <Button variant="primary" size="lg" className="w-full" onClick={onAction}>Tentar novamente</Button>}\n      </div>\n    </div>\n  );\n}\n`,
 };
 
 /* ---------- LOGO ---------- */
@@ -1113,18 +1129,18 @@ PG.menu = {
   gallery: 'parte',
   stage: s => s.parte === 'topbar' ? 'dark' : 'gray',
   tree: s => {
-    if (s.parte === 'topbar') return N('header', 'flex h-[56px] w-[360px] max-w-full items-center justify-between bg-[#05051c]/[.16] px-sm', {}, [N('button', 'text-text-on-action [&>svg]:h-m [&>svg]:w-m', { type: 'button', 'aria-label': 'Abrir menu' }, [I(K.menu)], { p: { 'data-noop': '1' } }), lg('inline', 'branca', 24), N('span', 'w-m', {})]);
+    if (s.parte === 'topbar') return N('header', 'flex h-[56px] w-[360px] max-w-full items-center justify-between bg-[#05051c]/[.16] px-sm', {}, [N('button', 'text-text-on-action [&>svg]:h-m [&>svg]:w-m', { type: 'button', 'aria-label': 'Abrir menu' }, [I(K.menu)], { p: { 'data-noop': '1' } }), lg('inline', 'branca', 24), N('span', 'w-m', { 'aria-hidden': 'true' })]);
     return N('nav', 'flex w-[360px] max-w-full flex-col gap-xlg rounded-r-m bg-bg-surface p-m shadow-sm', { 'aria-label': 'Menu' }, [
-      N('div', 'flex items-center justify-between', {}, [lg('inline', 'colorida', 24), N('button', 'text-icon-default [&>svg]:h-m [&>svg]:w-m', { type: 'button', 'aria-label': 'Fechar' }, [I(K.fechar)], { p: { 'data-noop': '1' } })]),
+      N('header', 'flex items-center justify-between', {}, [lg('inline', 'colorida', 24), N('button', 'text-icon-default [&>svg]:h-m [&>svg]:w-m', { type: 'button', 'aria-label': 'Fechar' }, [I(K.fechar)], { p: { 'data-noop': '1' } })]),
       s.logado
         ? N('div', 'flex items-center gap-sm', {}, [N('span', 'flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-pill ' + IMG_BG + ' text-text-on-action [&>svg]:h-m [&>svg]:w-m', { 'aria-hidden': 'true' }, [I(K.pessoa)]), N('div', 'flex flex-col gap-2xsm', {}, [TXT('font-display text-h5-m font-bold text-text-primary', s.nome), s.vip ? N('span', BADGE_BASE + ' w-fit bg-bg-brand-subtle text-text-brand', {}, [I(K.coroa), 'VIP']) : TXT('text-desc text-text-secondary', 'Ver meu perfil')])])
         : N('div', 'flex flex-col gap-xsm', {}, [TXT('font-display text-h5-m font-bold text-text-primary', 'Bora pro rolê?'), TXT('text-desc-lg text-text-secondary', 'Entre para salvar favoritos e comprar ingressos.'), bt('primary', 'md', 'Entrar', '', 'w-full')]),
-      N('label', 'flex items-center gap-xsm rounded-pill border border-border-default px-sm py-xsm text-text-secondary [&>svg]:h-4 [&>svg]:w-4', {}, [I(K.lupa), N('input', 'w-full bg-transparent text-body outline-none placeholder:text-text-secondary', { type: 'search', placeholder: 'Buscar rolês', 'aria-label': 'Buscar' })]),
-      N('ul', 'flex flex-col', {}, [...MENU_ITEMS.map(([t, ic]) => N('li', '', {}, [menuItem(t, ic)])), s.logado && N('li', '', {}, [menuItem('Sair', K.sair)])]),
+      N('div', '', { role: 'search' }, [N('label', 'flex items-center gap-xsm rounded-pill border border-border-default px-sm py-xsm text-text-secondary [&>svg]:h-4 [&>svg]:w-4', {}, [I(K.lupa), N('input', 'w-full bg-transparent text-body outline-none placeholder:text-text-secondary', { type: 'search', placeholder: 'Buscar rolês', 'aria-label': 'Buscar' })])]),
+      N('ul', 'flex flex-col', { role: 'list' }, [...MENU_ITEMS.map(([t, ic]) => N('li', '', {}, [menuItem(t, ic)])), s.logado && N('li', '', {}, [menuItem('Sair', K.sair)])]),
     ]);
   },
   usage: s => `import { Menu } from './Menu';\n\n<Menu\n  variant="${s.parte}"\n  ${s.parte === 'sidebar' ? `user={${s.logado ? `{ name: '${s.nome}', vip: ${s.vip} }` : 'null'}}\n  ` : ''}onClose={closeMenu}\n/>`,
-  source: () => `${IMPORTS([K.menu, K.fechar, K.lupa, K.pessoa, K.coroa, K.casa, K.cal, K.pin, K.coracao, K.sair])}const ITEMS = [\n  ['Início', ${pascal(K.casa)}],\n  ['Eventos', ${pascal(K.cal)}],\n  ['Perto de mim', ${pascal(K.pin)}],\n  ['Favoritos', ${pascal(K.coracao)}],\n];\n\nexport function TopBar({ onMenu }) {\n  return (\n    <header className="flex h-[56px] w-[360px] max-w-full items-center justify-between bg-[#05051c]/[.16] px-sm">\n      <button type="button" aria-label="Abrir menu" onClick={onMenu} className="text-text-on-action [&>svg]:h-m [&>svg]:w-m"><${pascal(K.menu)} /></button>\n      <Logo tipo="inline" cor="branca" height={24} />\n      <span className="w-m" />\n    </header>\n  );\n}\n\nexport function Sidebar({ user, onClose }) {\n  return (\n    <nav aria-label="Menu" className="flex w-[360px] max-w-full flex-col gap-xlg rounded-r-m bg-bg-surface p-m shadow-sm">\n      <div className="flex items-center justify-between">\n        <Logo tipo="inline" height={24} />\n        <button type="button" aria-label="Fechar" onClick={onClose} className="text-icon-default [&>svg]:h-m [&>svg]:w-m"><${pascal(K.fechar)} /></button>\n      </div>\n      {user ? <Profile user={user} /> : <GuestCard />}\n      <SearchField />\n      <ul>\n        {ITEMS.map(([label, Icon]) => (\n          <li key={label}>\n            <a href="#" className="flex items-center gap-sm py-xsm text-body text-text-primary hover:text-action-primary [&>svg]:h-m [&>svg]:w-m"><Icon />{label}</a>\n          </li>\n        ))}\n      </ul>\n    </nav>\n  );\n}\n`,
+  source: () => `${IMPORTS([K.menu, K.fechar, K.lupa, K.pessoa, K.coroa, K.casa, K.cal, K.pin, K.coracao, K.sair])}const ITEMS = [\n  ['Início', ${pascal(K.casa)}],\n  ['Eventos', ${pascal(K.cal)}],\n  ['Perto de mim', ${pascal(K.pin)}],\n  ['Favoritos', ${pascal(K.coracao)}],\n];\n\nexport function TopBar({ onMenu }) {\n  return (\n    <header className="flex h-[56px] w-[360px] max-w-full items-center justify-between bg-[#05051c]/[.16] px-sm">\n      <button type="button" aria-label="Abrir menu" onClick={onMenu} className="text-text-on-action [&>svg]:h-m [&>svg]:w-m"><${pascal(K.menu)} /></button>\n      <Logo tipo="inline" cor="branca" height={24} />\n      <span aria-hidden="true" className="w-m" />\n    </header>\n  );\n}\n\nexport function Sidebar({ user, onClose }) {\n  return (\n    <nav aria-label="Menu" className="flex w-[360px] max-w-full flex-col gap-xlg rounded-r-m bg-bg-surface p-m shadow-sm">\n      <header className="flex items-center justify-between">\n        <Logo tipo="inline" height={24} />\n        <button type="button" aria-label="Fechar" onClick={onClose} className="text-icon-default [&>svg]:h-m [&>svg]:w-m"><${pascal(K.fechar)} /></button>\n      </header>\n      {user ? <Profile user={user} /> : <GuestCard />}\n      <div role="search"><SearchField /></div>\n      <ul role="list">\n        {ITEMS.map(([label, Icon]) => (\n          <li key={label}>\n            <a href="#" className="flex items-center gap-sm py-xsm text-body text-text-primary hover:text-action-primary [&>svg]:h-m [&>svg]:w-m"><Icon />{label}</a>\n          </li>\n        ))}\n      </ul>\n    </nav>\n  );\n}\n`,
 };
 
 /* ---------- HEADER (Página) ---------- */
@@ -1142,12 +1158,14 @@ PG.header = {
   gallery: 'tipo',
   galleryApply: (s, v) => ({ titulo: HD[v].titulo, btn: HD[v].btn }),
   stage: () => 'light',
-  tree: s => { const d = s.res === 'desktop'; const h = HD[s.tipo]; return N('header', `relative flex ${d ? 'h-[560px] w-[708px] p-xlg' : 'h-[392px] w-[360px] px-m pb-xlg pt-m'} max-w-full items-end ${IMG_BG}`, { role: 'img', 'aria-label': 'Imagem de capa' }, [
-    N('div', 'absolute inset-0 ' + SHADE, {}),
-    N('div', 'relative flex flex-col gap-sm text-text-on-action', {}, [TXT('text-desc', h.eyebrow), TXT(`font-display font-bold ${d ? 'text-h3' : 'text-h3-m'}`, s.titulo), N('div', 'flex flex-col gap-xsm', {}, [iconDesc(s.tipo === 'evento' ? K.cal : K.nota, h.i1, 'text-text-on-action'), iconDesc(s.tipo === 'artista' ? K.grupo : K.pin, h.i2, 'text-text-on-action')]), s.botao && bt('primary', 'lg', s.btn, '', 'w-fit')]),
+  tree: s => { const d = s.res === 'desktop'; const h = HD[s.tipo]; return N('header', `relative flex flex-col justify-end gap-sm text-text-on-action ${d ? 'h-[560px] w-[708px] p-xlg' : 'h-[392px] w-[360px] px-m pb-xlg pt-m'} max-w-full ${IMG_BG}`, {}, [
+    N('div', 'absolute inset-0 ' + SHADE, { 'aria-hidden': 'true' }),
+    N('hgroup', 'z-10 flex flex-col gap-sm', {}, [TXT('text-desc', h.eyebrow), HEAD('h1', `font-display font-bold ${d ? 'text-h3' : 'text-h3-m'}`, s.titulo)]),
+    N('ul', 'z-10 flex flex-col gap-xsm', { role: 'list' }, [N('li', '', {}, [iconDesc(s.tipo === 'evento' ? K.cal : K.nota, h.i1, 'text-text-on-action')]), N('li', '', {}, [iconDesc(s.tipo === 'artista' ? K.grupo : K.pin, h.i2, 'text-text-on-action')])]),
+    s.botao && bt('primary', 'lg', s.btn, '', 'z-10 w-fit'),
   ]); },
   usage: s => `import { PageHeader } from './PageHeader';\n\n<PageHeader\n  tipo="${s.tipo}"${s.res === 'desktop' ? '\n  size="desktop"' : ''}\n  title="${s.titulo}"\n  image="/capas/${s.tipo}.jpg"\n  ${s.botao ? `action={{ label: '${s.btn}', onClick: handleAction }}` : 'action={null}'}\n/>`,
-  source: () => `${IMPORTS([K.cal, K.pin])}export function PageHeader({ title, eyebrow, lines = [], image, action, size = 'mobile' }) {\n  const desktop = size === 'desktop';\n  return (\n    <header\n      className={\`relative flex items-end bg-cover bg-center \${desktop ? 'h-[560px] w-[708px] p-xlg' : 'h-[392px] w-[360px] px-m pb-xlg pt-m'} max-w-full\`}\n      style={{ backgroundImage: \`url(\${image})\` }}\n    >\n      <div className="absolute inset-0 ${SHADE}" />\n      <div className="relative flex flex-col gap-sm text-text-on-action">\n        <p className="text-desc">{eyebrow}</p>\n        <h1 className={\`font-display font-bold \${desktop ? 'text-h3' : 'text-h3-m'}\`}>{title}</h1>\n        {lines.map((l) => <p key={l} className="text-desc-lg">{l}</p>)}\n        {action && <Button variant="primary" size="lg" onClick={action.onClick}>{action.label}</Button>}\n      </div>\n    </header>\n  );\n}\n`,
+  source: () => `${IMPORTS([K.cal, K.pin])}export function PageHeader({ title, eyebrow, lines = [], image, action, size = 'mobile' }) {\n  const desktop = size === 'desktop';\n  return (\n    <header\n      className={\`relative flex flex-col justify-end gap-sm bg-cover bg-center text-text-on-action \${desktop ? 'h-[560px] w-[708px] p-xlg' : 'h-[392px] w-[360px] px-m pb-xlg pt-m'} max-w-full\`}\n      style={{ backgroundImage: \`url(\${image})\` }}\n    >\n      <div aria-hidden="true" className="absolute inset-0 ${SHADE}" />\n      <hgroup className="z-10 flex flex-col gap-sm">\n        <p className="text-desc">{eyebrow}</p>\n        <h1 className={\`font-display font-bold \${desktop ? 'text-h3' : 'text-h3-m'}\`}>{title}</h1>\n      </hgroup>\n      <ul role="list" className="z-10 flex flex-col gap-xsm">\n        {lines.map((l) => <li key={l} className="text-desc-lg">{l}</li>)}\n      </ul>\n      {action && <Button variant="primary" size="lg" className="z-10 w-fit" onClick={action.onClick}>{action.label}</Button>}\n    </header>\n  );\n}\n`,
 };
 
 /* ---------- FOOTER ---------- */
@@ -1160,13 +1178,13 @@ PG.footer = {
   ],
   stage: () => 'light',
   tree: s => { const d = s.res === 'desktop'; const ls = String(s.links).split(',').map(x => x.trim()).filter(Boolean).slice(0, 6);
-    const soc = N('div', 'flex gap-sm text-icon-default [&>a>svg]:h-m [&>a>svg]:w-m', {}, [[K.insta, 'Instagram'], [K.tiktok, 'TikTok'], [K.youtube, 'YouTube'], [K.face, 'Facebook']].map(([ic, l]) => N('a', '', { href: '#', 'aria-label': l }, [I(ic)], { p: { 'data-noop': '1' } })));
+    const soc = N('nav', 'text-icon-default', { 'aria-label': 'Redes sociais' }, [N('ul', 'flex gap-sm [&_svg]:h-m [&_svg]:w-m', { role: 'list' }, [[K.insta, 'Instagram'], [K.tiktok, 'TikTok'], [K.youtube, 'YouTube'], [K.face, 'Facebook']].map(([ic, l]) => N('li', 'flex', {}, [N('a', '', { href: '#', 'aria-label': l }, [I(ic)], { p: { 'data-noop': '1' } })])))]);
     return N('footer', `flex ${d ? 'w-[1440px] flex-row items-start justify-between px-[212px] py-xlg' : 'w-[360px] flex-col gap-lg px-m py-xlg'} max-w-full bg-bg-subtle`, {}, [
       N('div', 'flex flex-col gap-sm', {}, [lg('linhas', 'colorida', 48), TXT('text-desc text-text-secondary', s.copy)]),
-      N('ul', 'flex flex-col gap-xsm', {}, ls.map(t => N('li', '', {}, [N('a', 'text-desc-lg text-text-primary hover:underline', { href: '#' }, [t], { p: { 'data-noop': '1' } })]))),
+      N('nav', '', { 'aria-label': 'Rodapé' }, [N('ul', 'flex flex-col gap-xsm', { role: 'list' }, ls.map(t => N('li', '', {}, [N('a', 'text-desc-lg text-text-primary hover:underline', { href: '#' }, [t], { p: { 'data-noop': '1' } })])))]),
       soc]); },
   usage: s => `import { Footer } from './Footer';\n\n<Footer\n  ${s.res === 'desktop' ? 'size="desktop"\n  ' : ''}links={[${String(s.links).split(',').map(x => `'${x.trim()}'`).join(', ')}]}\n  copyright="${s.copy}"\n/>`,
-  source: () => `${IMPORTS([K.insta, K.tiktok, K.youtube, K.face])}const SOCIAL = [\n  [${pascal(K.insta)}, 'Instagram', 'https://instagram.com/'],\n  [${pascal(K.tiktok)}, 'TikTok', 'https://tiktok.com/'],\n  [${pascal(K.youtube)}, 'YouTube', 'https://youtube.com/'],\n  [${pascal(K.face)}, 'Facebook', 'https://facebook.com/'],\n];\n\nexport function Footer({ links, copyright, size = 'mobile' }) {\n  const desktop = size === 'desktop';\n  return (\n    <footer\n      className={\`flex max-w-full bg-bg-subtle \${desktop ? 'w-[1440px] flex-row items-start justify-between px-[212px] py-xlg' : 'w-[360px] flex-col gap-lg px-m py-xlg'}\`}\n    >\n      <div className="flex flex-col gap-sm">\n        <Logo tipo="linhas" height={48} />\n        <p className="text-desc text-text-secondary">{copyright}</p>\n      </div>\n      <ul className="flex flex-col gap-xsm">\n        {links.map((l) => <li key={l}><a href="#" className="text-desc-lg text-text-primary hover:underline">{l}</a></li>)}\n      </ul>\n      <div className="flex gap-sm text-icon-default [&>a>svg]:h-m [&>a>svg]:w-m">\n        {SOCIAL.map(([Icon, label, href]) => <a key={label} href={href} aria-label={label}><Icon /></a>)}\n      </div>\n    </footer>\n  );\n}\n`,
+  source: () => `${IMPORTS([K.insta, K.tiktok, K.youtube, K.face])}const SOCIAL = [\n  [${pascal(K.insta)}, 'Instagram', 'https://instagram.com/'],\n  [${pascal(K.tiktok)}, 'TikTok', 'https://tiktok.com/'],\n  [${pascal(K.youtube)}, 'YouTube', 'https://youtube.com/'],\n  [${pascal(K.face)}, 'Facebook', 'https://facebook.com/'],\n];\n\nexport function Footer({ links, copyright, size = 'mobile' }) {\n  const desktop = size === 'desktop';\n  return (\n    <footer\n      className={\`flex max-w-full bg-bg-subtle \${desktop ? 'w-[1440px] flex-row items-start justify-between px-[212px] py-xlg' : 'w-[360px] flex-col gap-lg px-m py-xlg'}\`}\n    >\n      <div className="flex flex-col gap-sm">\n        <Logo tipo="linhas" height={48} />\n        <p className="text-desc text-text-secondary">{copyright}</p>\n      </div>\n      <nav aria-label="Rodapé">\n        <ul role="list" className="flex flex-col gap-xsm">\n          {links.map((l) => <li key={l}><a href="#" className="text-desc-lg text-text-primary hover:underline">{l}</a></li>)}\n        </ul>\n      </nav>\n      <nav aria-label="Redes sociais" className="text-icon-default">\n        <ul role="list" className="flex gap-sm [&_svg]:h-m [&_svg]:w-m">\n          {SOCIAL.map(([Icon, label, href]) => (\n            <li key={label} className="flex"><a href={href} aria-label={label}><Icon /></a></li>\n          ))}\n        </ul>\n      </nav>\n    </footer>\n  );\n}\n`,
 };
 
 /* ---------- ADSENSE ---------- */
@@ -1180,11 +1198,11 @@ PG.adsense = {
   ],
   gallery: 'dim',
   stage: s => s.inverted ? 'dark' : 'light',
-  tree: s => { const [, w, h] = AD[s.dim]; return N('section', 'flex flex-col gap-sm', { style: `width:${w}px;max-width:100%` }, [
+  tree: s => { const [, w, h] = AD[s.dim]; return N('aside', 'flex flex-col gap-sm', { style: `width:${w}px;max-width:100%`, 'aria-label': s.label }, [
     TXT('text-eyebrow uppercase ' + (s.inverted ? 'text-text-on-action' : 'text-text-secondary'), s.label),
-    N('div', 'flex max-w-full items-center justify-center border border-dashed ' + (s.inverted ? 'border-text-on-action text-text-on-action' : 'border-border-default text-text-secondary') + ' text-desc', { style: `width:${w}px;height:${h}px`, role: 'complementary', 'aria-label': 'Espaço de anúncio' }, [`Anúncio ${w}×${h}`])]); },
+    N('div', 'flex max-w-full items-center justify-center border border-dashed ' + (s.inverted ? 'border-text-on-action text-text-on-action' : 'border-border-default text-text-secondary') + ' text-desc', { style: `width:${w}px;height:${h}px` }, [`Anúncio ${w}×${h}`])]); },
   usage: s => `import { AdSlot } from './AdSlot';\n\n<AdSlot\n  size="${s.dim}"${s.inverted ? '\n  inverted' : ''}\n  label="${s.label}"\n  slot="1234567890"\n/>`,
-  source: () => `const SIZES = {\n${Object.keys(AD).map(k => `  '${k}': [${AD[k][1]}, ${AD[k][2]}],`).join('\n')}\n};\n\nexport function AdSlot({ size = 'retangulo-medio', inverted, label = 'Publicidade', slot }) {\n  const [w, h] = SIZES[size];\n  return (\n    <section className="flex max-w-full flex-col gap-sm" style={{ width: w }}>\n      <p className={\`text-eyebrow uppercase \${inverted ? 'text-text-on-action' : 'text-text-secondary'}\`}>{label}</p>\n      <ins className="adsbygoogle block" style={{ width: w, height: h }} data-ad-client="ca-pub-XXXXXXXX" data-ad-slot={slot} />\n    </section>\n  );\n}\n`,
+  source: () => `const SIZES = {\n${Object.keys(AD).map(k => `  '${k}': [${AD[k][1]}, ${AD[k][2]}],`).join('\n')}\n};\n\nexport function AdSlot({ size = 'retangulo-medio', inverted, label = 'Publicidade', slot }) {\n  const [w, h] = SIZES[size];\n  return (\n    <aside aria-label={label} className="flex max-w-full flex-col gap-sm" style={{ width: w }}>\n      <p className={\`text-eyebrow uppercase \${inverted ? 'text-text-on-action' : 'text-text-secondary'}\`}>{label}</p>\n      <ins className="adsbygoogle block" style={{ width: w, height: h }} data-ad-client="ca-pub-XXXXXXXX" data-ad-slot={slot} />\n    </aside>\n  );\n}\n`,
 };
 
 /* ---------- CARROSSEL ---------- */
@@ -1197,9 +1215,9 @@ PG.carrossel = {
   ],
   gallery: 'tipo',
   stage: () => 'light',
-  tree: s => { const c = CR[s.tipo]; return N('div', 'flex w-[1064px] max-w-full gap-sm overflow-x-auto', { role: 'list', tabindex: '0' }, Array.from({ length: +s.qtd }, (_, i) => N('article', 'relative flex h-[252px] w-[200px] shrink-0 items-end overflow-hidden rounded-xsm ' + IMG_BG, { role: 'listitem' }, [N('div', 'absolute inset-0 ' + SHADE, {}), N('div', 'relative flex flex-col gap-2xsm p-sm text-text-on-action', {}, [TXT('text-desc', c[1]), TXT('text-desc-lg font-semibold', c[2 + i])])]))); },
+  tree: s => { const c = CR[s.tipo]; return N('section', 'w-[1064px] max-w-full', { 'aria-roledescription': 'carousel', 'aria-label': c[0] }, [N('ul', 'flex gap-sm overflow-x-auto', { role: 'list', tabindex: '0', 'aria-label': 'Itens do carrossel' }, Array.from({ length: +s.qtd }, (_, i) => N('li', 'shrink-0', {}, [N('article', 'relative flex h-[252px] w-[200px] items-end overflow-hidden rounded-xsm ' + IMG_BG, {}, [N('div', 'absolute inset-0 ' + SHADE, {}), N('div', 'relative flex flex-col gap-2xsm p-sm text-text-on-action', {}, [TXT('text-desc', c[1]), HEAD('h3', 'text-desc-lg font-semibold', c[2 + i])])])])))]); },
   usage: s => `import { Carousel } from './Carousel';\n\n<Carousel\n  title="${CR[s.tipo][0]}"\n  items={items}\n  renderItem={(item) => <Card key={item.id} {...item} />}\n/>`,
-  source: () => `export function Carousel({ items, renderItem }) {\n  return (\n    <div role="list" tabIndex={0} className="flex w-[1064px] max-w-full gap-sm overflow-x-auto snap-x">\n      {items.map((item) => (\n        <div role="listitem" key={item.id} className="shrink-0 snap-start">\n          {renderItem(item)}\n        </div>\n      ))}\n    </div>\n  );\n}\n`,
+  source: () => `export function Carousel({ title, items, renderItem }) {\n  return (\n    <section aria-roledescription="carousel" aria-label={title} className="w-[1064px] max-w-full">\n      <ul\n        role="list"\n        tabIndex={0}\n        aria-label="Itens do carrossel"\n        className="flex gap-sm overflow-x-auto snap-x"\n      >\n        {items.map((item) => (\n          <li key={item.id} className="shrink-0 snap-start">\n            {renderItem(item)}\n          </li>\n        ))}\n      </ul>\n    </section>\n  );\n}\n`,
 };
 
 /* Documentação dos componentes — espelho dos documentos do Figma (fase 1) */
@@ -1551,9 +1569,9 @@ const CODE_STORE = {}; let codeSeq = 0;
 const storeCode = t => { const id = 'c' + (++codeSeq); CODE_STORE[id] = t; return id; };
 
 /* ---------- Rotas / navegação ---------- */
-const FOUNDATIONS = [['cores', 'Cores'], ['tipografia', 'Tipografia'], ['grids', 'Grids'], ['raio', 'Border radius'], ['voz', 'Tom de voz']];
+const FOUNDATIONS = [['cores', 'Cores'], ['tipografia', 'Tipografia'], ['grids', 'Grids'], ['raio', 'Border radius'], ['voz', 'Tom de voz'], ['a11y', 'Acessibilidade']];
 const ROUTES = new Set(['inicio', ...DOCS.map(d => d.id), ...FOUNDATIONS.map(f => f[0])]);
-let current = 'botao';
+let current = 'inicio';
 let navFilter = '';
 
 function navItem(id, label) {
@@ -1773,7 +1791,7 @@ function eventcardSpecs(d) {
   const ctx = section('Contextos de uso', `<p class="lim text-body text-text-secondary">O EventCard tem duas listagens. O componente é o mesmo; a propriedade Listagem muda o layout conforme o contexto.</p><div class="grid grid-cols-1 gap-m lg:grid-cols-2">${EC_CONTEXTOS.map(c => card(`<div class="flex flex-col gap-m"><div class="flex min-h-[112px] items-center justify-center overflow-hidden rounded-3xsm p-m ${STAGES[c.st]}">${ecEl(c.l)}</div><div class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">${esc(c.onde)}</p><h3 class="font-display text-h6-m font-bold text-text-primary md:text-h6">${esc(c.t)}</h3><p class="lim text-desc-lg text-text-secondary">${esc(c.d)}</p></div><dl class="flex flex-col gap-xsm">${c.usa.map(([k, v]) => `<div class="flex gap-xsm text-desc-lg"><dt class="w-20 shrink-0 font-semibold text-text-primary">${k}</dt><dd class="text-text-secondary">${esc(v)}</dd></div>`).join('')}</dl></div>`)).join('')}</div>`);
   const uso = section('Diretrizes de uso', grid2([
     `<div class="flex flex-col gap-sm">${blockHead('Uso', '')}<p class="text-body text-text-primary"><strong>Quando usar.</strong> Para listar eventos. Em carrossel, use a Listagem Horizontal. Em agenda e páginas de listagem, use a Vertical.</p><p class="text-body text-text-primary"><strong>Quando não usar.</strong> Para produtos, use o Card. Não misture as duas listagens na mesma lista.</p></div>`,
-    `<div class="flex flex-col gap-sm">${blockHead('Qualidade', '')}<p class="text-body text-text-primary"><strong>Acessibilidade.</strong> O card inteiro é um único link. A imagem precisa de texto alternativo, e o texto sobre a imagem mantém contraste mínimo de 4,5:1.</p><p class="text-body text-text-primary"><strong>Conteúdo.</strong> Título com o nome do evento, em sentence case e sem ponto final. Data no formato 19/10 • 14h.</p></div>`]));
+    `<div class="flex flex-col gap-sm">${blockHead('Qualidade', '')}<p class="text-body text-text-primary"><strong>Acessibilidade.</strong> O card é um &lt;article&gt; e o link fica no título (&lt;h3&gt;), esticado para cobrir o card inteiro. A imagem é decorativa (alt vazio), a data usa &lt;time datetime&gt; e o texto sobre a imagem mantém contraste mínimo de 4,5:1.</p><p class="text-body text-text-primary"><strong>Conteúdo.</strong> Título com o nome do evento, em sentence case e sem ponto final. Data no formato 19/10 • 14h.</p></div>`]));
   return [ctx,
     section('Variantes e estados', grid2(d.v.map(b => rowsBlock(b, true)))),
     section('Propriedades', grid2(d.p.map(b => rowsBlock(b)))),
@@ -1830,6 +1848,54 @@ const vozMd = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibol
 function renderVoz() {
   const secs = VOZ.secoes.map((s, i) => section(`${i + 1}. ${s.t}`, `${s.sub ? `<p class="text-body text-text-secondary">${esc(s.sub)}</p>` : ''}<ul class="flex flex-col gap-sm">${s.itens.map(([k, v]) => `<li class="flex gap-sm text-body text-text-primary"><span class="mt-2xsm shrink-0 text-icon-brand [&>svg]:h-4 [&>svg]:w-4">${svg('check')}</span><span><span class="font-semibold">${esc(k)}.</span> ${esc(v)}</span></li>`).join('')}</ul>${s.datas ? `<div class="flex flex-col gap-sm">${blockHead('Datas por componente')}${table(['Componente', 'Formato', 'Exemplo'], s.datas.map(([c, f, e]) => [esc(c), `<span class="font-semibold">${esc(f)}</span>`, esc(e)]))}</div>` : ''}<div class="flex flex-col gap-sm">${blockHead("Do & Don't")}${table(['Faça', 'Não faça', 'Por quê'], s.dd.map(([ok, no, why]) => [`<span class="flex gap-xsm"><span class="mt-2xsm shrink-0 text-feedback-success [&>svg]:h-4 [&>svg]:w-4">${svg('check')}</span><span class="text-body text-text-primary">${vozMd(ok)}</span></span>`, `<span class="flex gap-xsm"><span class="mt-2xsm shrink-0 text-feedback-danger [&>svg]:h-4 [&>svg]:w-4">${svg('x')}</span><span class="text-body text-text-primary">${vozMd(no)}</span></span>`, `<span class="text-desc-lg text-text-secondary">${esc(why)}</span>`]))}</div>`, 'voz-' + (i + 1))).join('');
   return `<div class="flex flex-col gap-6xlg"><header class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">FUNDAMENTO</p><h1 class="font-display text-h1-m font-bold text-text-primary md:text-h1">${esc(VOZ.titulo)}</h1><p class="text-body text-text-secondary">${esc(VOZ.sub)}</p></header>${secs}</div>`;
+}
+/* ---------- Acessibilidade e HTML semântico ---------- */
+const A11Y_REGRAS = [
+  ['Elemento certo primeiro', 'Botão é <button>, link é <a>, lista é <ul>/<ol>, título é <h1> a <h6>, e regiões usam <nav>, <section>, <aside>, <header> e <footer>. Só depois pense em role.'],
+  ['role e aria só quando o HTML não resolve', 'Padrões compostos como tablist, radiogroup, dialog, status e alert precisam de role e dos atributos aria que o acompanham.'],
+  ['Nome acessível', 'Todo controle sem texto visível (só ícone) leva aria-label. Imagem decorativa usa alt vazio e ícone usa aria-hidden="true".'],
+  ['Hierarquia de títulos', 'Um <h1> por página, sem pular níveis. O título do componente define o nível, então ajuste o h2/h3 ao contexto da página.'],
+  ['Listas com role="list"', 'O reset do Tailwind remove os marcadores e o VoiceOver deixa de anunciar a lista. Por isso todo <ul>/<ol> do sistema leva role="list".'],
+  ['Teclado e foco', 'Todo elemento interativo funciona com Tab, Enter e Espaço, mostra foco visível (focus-visible) e, em grupos como Tab e Switcher, usa setas com tabindex móvel.'],
+  ['Estados anunciados', 'Use aria-expanded, aria-selected, aria-checked, aria-pressed, aria-current, aria-invalid com aria-describedby e aria-busy em vez de depender só de cor.'],
+  ['Agrupamentos semânticos', 'Grupos de itens usam <ul>/<li>, cabeçalhos de bloco usam <header> e <hgroup>, rodapés de ação usam <footer>, imagem com legenda usa <figure>, pares rótulo e valor usam <dl>, e divisores usam <hr>. O <div> fica só para layout puro, e fundos de modal levam role="presentation".'],
+  ['Datas e cards clicáveis', 'Datas usam <time datetime>. Card inteiro clicável usa um link no título esticado com after:absolute, nunca um link envolvendo blocos.'],
+];
+const A11Y_COMP = [
+  ['Accordion', 'ul > li > h3 > button + section', 'aria-expanded, aria-controls, painel &lt;section&gt; com aria-labelledby'],
+  ['Adsense', 'aside', 'aria-label com o rótulo do anúncio'],
+  ['Avaliações', 'section > h3', 'aria-labelledby no título, role="img" com aria-label da nota (ex.: 4 de 5 estrelas)'],
+  ['Banner', 'section > h3', 'aria-labelledby apontando para o título'],
+  ['Botão', 'button', 'aria-label quando só tem ícone'],
+  ['Breadcrumb', 'nav > ol > li', 'aria-label, aria-current="page" no item atual'],
+  ['Card', 'article > figure + h3', 'imagem decorativa com alt vazio; preço em role="group" com aria-label'],
+  ['Carrossel', 'section > ul > li > article', 'aria-roledescription="carousel", aria-label, lista rolável com tabindex="0"'],
+  ['Chip', 'button', 'aria-pressed'],
+  ['Drawer', 'div > h2', 'role="dialog", aria-modal, aria-labelledby, aria-busy ao carregar'],
+  ['EventCard', 'article > header > h3 > a', 'link esticado, &lt;time datetime&gt; na data'],
+  ['FAQ', 'section > h2 + Accordion', 'aria-labelledby apontando para o título'],
+  ['Footer', 'footer > nav > ul > li > a', 'dois nav com aria-label (Rodapé e Redes sociais)'],
+  ['Formulário', 'label > input', 'input radio ou checkbox real, escondido com sr-only, e foco no desenho'],
+  ['Header da página', 'header > hgroup > h1 + ul', 'título da página como h1; camada de gradiente com aria-hidden'],
+  ['IconButton', 'button', 'aria-label obrigatório (Voltar, Fechar, Instagram…)'],
+  ['Input', 'label + input + p', 'for/id, aria-invalid e aria-describedby na descrição; busca com role="search"'],
+  ['Link', 'a', 'texto descritivo, sem "clique aqui"'],
+  ['List item', 'article > header > h3', 'imagem decorativa, data em &lt;time datetime&gt;'],
+  ['Loading', 'span', 'role="status" com texto "Carregando" em sr-only e svg aria-hidden'],
+  ['Logo', 'img ou span', 'alt ou aria-label "Rolê Agora"'],
+  ['Menu', 'nav > ul > li > a', 'aria-label, busca dentro de role="search"'],
+  ['Modal', 'div > header > h2 + ul + dl + footer', 'role="dialog", aria-modal, aria-labelledby, Esc fecha; fundo com role="presentation"'],
+  ['Paginação', 'nav > ul > li > button', 'aria-label "Página n", aria-current no ponto ativo'],
+  ['Popover', 'p', 'role="status"; no tipo aviso, role="alert"'],
+  ['Switcher', 'div > button', 'role="radiogroup" e "radio", aria-checked, tabindex móvel'],
+  ['Tab', 'div > button', 'role="tablist" e "tab", aria-selected, aria-controls, tabindex móvel'],
+  ['Tabela', 'figure > table > caption + tr > th + td', 'caption em sr-only, th scope="row"'],
+];
+function renderA11y() {
+  const code = t => `<code class="font-mono text-desc">${t}</code>`;
+  const regras = section('Regras gerais', `<ul class="flex flex-col gap-sm">${A11Y_REGRAS.map(([k, v]) => `<li class="flex gap-sm text-body text-text-primary"><span class="mt-2xsm shrink-0 text-icon-brand [&>svg]:h-4 [&>svg]:w-4">${svg('check')}</span><span><span class="font-semibold">${esc(k)}.</span> ${esc(v)}</span></li>`).join('')}</ul>`);
+  const comps = section('Por componente', `<p class="text-body text-text-secondary">${esc('O HTML e o código React de cada componente já seguem esta tabela.')}</p>${table(['Componente', 'Elementos', 'role e aria'], A11Y_COMP.map(([c, e, r]) => [`<span class="font-semibold">${esc(c)}</span>`, code(esc(e)), esc(r)]))}`);
+  return `<div class="flex flex-col gap-6xlg"><header class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">FUNDAMENTO</p><h1 class="font-display text-h1-m font-bold text-text-primary md:text-h1">Acessibilidade e HTML semântico</h1><p class="text-body text-text-secondary">Todo componente usa o elemento HTML correto e, quando preciso, role e aria.</p></header>${regras}${comps}</div>`;
 }
 /* ---------- Border radius ---------- */
 const RAIO_EX = [
@@ -1906,7 +1972,7 @@ function limitLines(root) {
 }
 function renderPage() {
   const el = $('#page');
-  el.innerHTML = current === 'inicio' ? renderInicio() : current === 'cores' ? renderCores() : current === 'tipografia' ? renderTipografia() : current === 'grids' ? renderGrids() : current === 'voz' ? renderVoz() : current === 'raio' ? renderRaio() : renderComponent(current);
+  el.innerHTML = current === 'inicio' ? renderInicio() : current === 'cores' ? renderCores() : current === 'tipografia' ? renderTipografia() : current === 'grids' ? renderGrids() : current === 'voz' ? renderVoz() : current === 'a11y' ? renderA11y() : current === 'raio' ? renderRaio() : renderComponent(current);
   tokenize(el); limitLines(el);
 }
 
@@ -1933,7 +1999,7 @@ document.addEventListener('click', async e => {
   if (t.hasAttribute('data-code-tab')) { codeTab = t.dataset.codeTab; return pgRefresh(false); }
   if (t.hasAttribute('data-pg-stage')) { s.stage = t.dataset.pgStage || null; root.querySelectorAll('[data-pg-stage]').forEach(b => { const on = (b.dataset.pgStage || '') === (s.stage || ''); b.setAttribute('aria-pressed', on); b.className = `rounded-pill px-sm py-2xsm text-desc ${on ? 'bg-bg-surface font-bold text-action-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`; }); return pgRefresh(false); }
   if (t.hasAttribute('data-set') && !t.disabled) { const [k, v] = t.dataset.set.split('='); s[k] = v; return pgRefresh(true); }
-  if (t.hasAttribute('data-toggle') && !t.disabled) { s[t.dataset.toggle] = !s[t.dataset.toggle]; return pgRefresh(true); }
+  if (t.hasAttribute('data-toggle') && !t.disabled) { if (t.tagName === 'LABEL' && e.target.tagName !== 'INPUT') e.preventDefault(); s[t.dataset.toggle] = !s[t.dataset.toggle]; return pgRefresh(true); }
 });
 document.addEventListener('change', e => {
   const t0 = e.target;
@@ -1971,7 +2037,7 @@ function setTheme(t, save = true) {
 (function boot() {
   try { const sv = localStorage.getItem('huszar-theme'); if (sv === 'dark' || sv === 'light') theme = sv; } catch (e) { /* ignore */ }
   setTheme(theme, false);
-  let start = 'botao';
+  let start = 'inicio';
   try { const h = (location.hash || '').replace('#', ''); if (ROUTES.has(h)) start = h; } catch (e) { /* ignore */ }
   go(start, { keepScroll: true });
 })();
