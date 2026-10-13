@@ -15,9 +15,9 @@ const PRIM = {
   Bluesky: ['#eafaf9','#c5f1ef','#98e7e3','#65dad4','#31cec6','#29ada6','#218a85','#196763','#104441'],
   Grass: ['#e9f5e7','#c2e2bc','#92cc87','#5bb34b','#24990f','#1e810d','#18670a','#124d08','#0c3205'],
   Dawn: ['#ece8ef','#cabfd3','#a08eb1','#715589','#411c62','#371852','#2c1342','#210e31','#150920'],
-  Night: ['#03030f'],
+  Night: ['#e0e0ff','#03030f'],
 };
-const PRIM_STEPS = { Neutral: [50,100,200,300,400,500,600,700,800,900], Night: [500] };
+const PRIM_STEPS = { Neutral: [50,100,200,300,400,500,600,700,800,900], Night: [100,500] };
 const STEPS9 = [100,200,300,400,500,600,700,800,900];
 const primList = [];
 for (const fam in PRIM) PRIM[fam].forEach((hex, i) => { const step = (PRIM_STEPS[fam] || STEPS9)[i]; primList.push({ fam, step, name: fam + '/' + step, css: '--' + fam.toLowerCase() + '-' + step, hex: hex.toUpperCase() }); });
@@ -31,6 +31,7 @@ const SEM_GROUPS = [
   ['Ação', 'action', [['action/primary','Twilight/500'],['action/primary-hover','Twilight/600'],['action/primary-subtle','Twilight/100']]],
   ['Feedback', 'feedback', [['feedback/success','Grass/500'],['feedback/success-subtle','Grass/100'],['feedback/danger','Sunny/500'],['feedback/danger-subtle','Sunny/100'],['feedback/warning','Midday/500'],['feedback/warning-subtle','Midday/100'],['feedback/info','Bluesky/700'],['feedback/info-subtle','Bluesky/100']]],
   ['Ícone', 'icon', [['icon/default','Neutral/900'],['icon/secondary','Neutral/600'],['icon/disabled','Neutral/400'],['icon/on-action','color/text/on-action'],['icon/brand','Twilight/500'],['icon/success','Grass/500'],['icon/danger','Sunny/500'],['icon/warning','Midday/500'],['icon/info','Bluesky/700']]],
+  ['Badge', 'badge', [['badge/bg/brand','Night/100'],['badge/text/brand','Dawn/500'],['badge/icon/brand','Dawn/500'],['badge/bg/warning','Midday/100'],['badge/text/warning','Dawn/500'],['badge/icon/warning','Dawn/500'],['badge/bg/live','Midday/100'],['badge/text/live','Sunny/500'],['badge/icon/live','Sunny/500'],['badge/bg/neutral','Neutral/100'],['badge/text/neutral','Neutral/600'],['badge/icon/neutral','Neutral/600'],['badge/bg/danger','Sunny/100'],['badge/text/danger','Sunset/500'],['badge/icon/danger','Sunset/500']]],
 ];
 const semList = [];
 SEM_GROUPS.forEach(([label, key, items]) => items.forEach(([n, ref]) => semList.push({ group: key, name: 'color/' + n, css: '--color-' + n.replace(/\//g, '-'), ref })));
@@ -39,7 +40,7 @@ function resolveRef(ref) { if (primByName[ref]) return ref; const s = semByName[
 semList.forEach(s => { s.prim = resolveRef(s.ref); s.hex = primByName[s.prim].hex; });
 
 /* Modo Dark da coleção Semantic */
-const DARK = { 'bg/page':'Night/500','bg/surface':'Neutral/900','bg/subtle':'Neutral/800','bg/brand-subtle':'Twilight/900','bg/page-dark':'Night/500','text/primary':'Neutral/50','text/secondary':'Neutral/400','text/on-action':'Neutral/50','text/brand':'Twilight/400','border/default':'Neutral/700','border/strong':'Neutral/500','action/primary':'Twilight/500','action/primary-hover':'Twilight/600','action/primary-subtle':'Twilight/900','feedback/success':'Grass/500','feedback/success-subtle':'Grass/900','feedback/danger':'Sunny/400','feedback/danger-subtle':'Sunny/900','feedback/warning':'Midday/500','feedback/warning-subtle':'Midday/900','feedback/info':'Bluesky/500','feedback/info-subtle':'Bluesky/900','icon/default':'Neutral/50','icon/secondary':'Neutral/400','icon/disabled':'Neutral/600','icon/on-action':'color/text/on-action','icon/brand':'Twilight/400','icon/success':'Grass/500','icon/danger':'Sunny/400','icon/warning':'Midday/500','icon/info':'Bluesky/500' };
+const DARK = { 'bg/page':'Night/500','bg/surface':'Neutral/900','bg/subtle':'Neutral/800','bg/brand-subtle':'Twilight/900','bg/page-dark':'Night/500','text/primary':'Neutral/50','text/secondary':'Neutral/400','text/on-action':'Neutral/50','text/brand':'Twilight/400','border/default':'Neutral/700','border/strong':'Neutral/500','action/primary':'Twilight/500','action/primary-hover':'Twilight/600','action/primary-subtle':'Twilight/900','feedback/success':'Grass/500','feedback/success-subtle':'Grass/900','feedback/danger':'Sunny/400','feedback/danger-subtle':'Sunny/900','feedback/warning':'Midday/500','feedback/warning-subtle':'Midday/900','feedback/info':'Bluesky/500','feedback/info-subtle':'Bluesky/900','icon/default':'Neutral/50','icon/secondary':'Neutral/400','icon/disabled':'Neutral/600','icon/on-action':'color/text/on-action','icon/brand':'Twilight/400','icon/success':'Grass/500','icon/danger':'Sunny/400','icon/warning':'Midday/500','icon/info':'Bluesky/500', 'badge/bg/brand':'Dawn/800','badge/text/brand':'Dawn/200','badge/icon/brand':'Dawn/200','badge/bg/warning':'Midday/900','badge/text/warning':'Dawn/200','badge/icon/warning':'Dawn/200','badge/bg/live':'Midday/900','badge/text/live':'Sunny/400','badge/icon/live':'Sunny/400','badge/bg/neutral':'Neutral/800','badge/text/neutral':'Neutral/400','badge/icon/neutral':'Neutral/400','badge/bg/danger':'Sunny/900','badge/text/danger':'Sunset/200','badge/icon/danger':'Sunset/200' };
 semList.forEach(s => { s.dref = DARK[s.name.replace('color/', '')]; s.dprim = resolveRef(s.dref); s.dhex = primByName[s.dprim].hex; });
 
 const SPACING = { '2xsm':4, xsm:8, sm:16, m:24, lg:32, xlg:40, '2xlg':48, '3xlg':56, '4xlg':64, '5xlg':72, '6xlg':80, '7xlg':88, '8xlg':96 };
@@ -83,7 +84,7 @@ const TW = {
   },
 };
 primList.forEach(p => { const f = p.fam.toLowerCase(); (TW.colors[f] = TW.colors[f] || {})[p.step] = `var(${p.css})`; });
-semList.forEach(s => { const [, g, k] = s.name.split('/'); (TW.colors[g] = TW.colors[g] || {})[k] = `var(${s.css})`; });
+semList.forEach(s => { const [, g, ...r] = s.name.split('/'); (TW.colors[g] = TW.colors[g] || {})[r.join('-')] = `var(${s.css})`; });
 for (const k in SPACING) TW.spacing[k] = SPACING[k] + 'px';
 for (const k in RADIUS) TW.borderRadius[k] = RADIUS[k] + 'px';
 function buildTwConfig() {
@@ -172,6 +173,7 @@ tailwind.config = { darkMode: ['variant', '[data-ds-theme="dark"] .ds-auto &'], 
   --dawn-700: #2c1342;
   --dawn-800: #210e31;
   --dawn-900: #150920;
+  --night-100: #e0e0ff;
   --night-500: #03030f;
 
   /* Semantic */
@@ -206,6 +208,21 @@ tailwind.config = { darkMode: ['variant', '[data-ds-theme="dark"] .ds-auto &'], 
   --color-icon-danger: var(--sunny-500);
   --color-icon-warning: var(--midday-500);
   --color-icon-info: var(--bluesky-700);
+  --color-badge-bg-brand: var(--night-100);
+  --color-badge-text-brand: var(--dawn-500);
+  --color-badge-icon-brand: var(--dawn-500);
+  --color-badge-bg-warning: var(--midday-100);
+  --color-badge-text-warning: var(--dawn-500);
+  --color-badge-icon-warning: var(--dawn-500);
+  --color-badge-bg-live: var(--midday-100);
+  --color-badge-text-live: var(--sunny-500);
+  --color-badge-icon-live: var(--sunny-500);
+  --color-badge-bg-neutral: var(--neutral-100);
+  --color-badge-text-neutral: var(--neutral-600);
+  --color-badge-icon-neutral: var(--neutral-600);
+  --color-badge-bg-danger: var(--sunny-100);
+  --color-badge-text-danger: var(--sunset-500);
+  --color-badge-icon-danger: var(--sunset-500);
 
   /* Spacing */
   --spacing-2xsm: 4px;
@@ -271,6 +288,21 @@ tailwind.config = { darkMode: ['variant', '[data-ds-theme="dark"] .ds-auto &'], 
   --color-icon-danger: var(--sunny-400);
   --color-icon-warning: var(--midday-500);
   --color-icon-info: var(--bluesky-500);
+  --color-badge-bg-brand: var(--dawn-800);
+  --color-badge-text-brand: var(--dawn-200);
+  --color-badge-icon-brand: var(--dawn-200);
+  --color-badge-bg-warning: var(--midday-900);
+  --color-badge-text-warning: var(--dawn-200);
+  --color-badge-icon-warning: var(--dawn-200);
+  --color-badge-bg-live: var(--midday-900);
+  --color-badge-text-live: var(--sunny-400);
+  --color-badge-icon-live: var(--sunny-400);
+  --color-badge-bg-neutral: var(--neutral-800);
+  --color-badge-text-neutral: var(--neutral-400);
+  --color-badge-icon-neutral: var(--neutral-400);
+  --color-badge-bg-danger: var(--sunny-900);
+  --color-badge-text-danger: var(--sunset-200);
+  --color-badge-icon-danger: var(--sunset-200);
 }
 .ds-lightscope {
   --color-bg-page: var(--neutral-50);
@@ -304,6 +336,21 @@ tailwind.config = { darkMode: ['variant', '[data-ds-theme="dark"] .ds-auto &'], 
   --color-icon-danger: var(--sunny-500);
   --color-icon-warning: var(--midday-500);
   --color-icon-info: var(--bluesky-700);
+  --color-badge-bg-brand: var(--night-100);
+  --color-badge-text-brand: var(--dawn-500);
+  --color-badge-icon-brand: var(--dawn-500);
+  --color-badge-bg-warning: var(--midday-100);
+  --color-badge-text-warning: var(--dawn-500);
+  --color-badge-icon-warning: var(--dawn-500);
+  --color-badge-bg-live: var(--midday-100);
+  --color-badge-text-live: var(--sunny-500);
+  --color-badge-icon-live: var(--sunny-500);
+  --color-badge-bg-neutral: var(--neutral-100);
+  --color-badge-text-neutral: var(--neutral-600);
+  --color-badge-icon-neutral: var(--neutral-600);
+  --color-badge-bg-danger: var(--sunny-100);
+  --color-badge-text-danger: var(--sunset-500);
+  --color-badge-icon-danger: var(--sunset-500);
   color: var(--color-text-primary);
 }
 
@@ -465,30 +512,62 @@ PG.botao = {
 };
 
 /* ---------- BADGE ---------- */
-const BADGE_BASE = 'inline-flex items-center gap-2xsm rounded-pill px-xsm py-2xsm text-desc whitespace-nowrap [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0 [&>svg]:text-icon-default';
+const BADGE_BASE = 'inline-flex items-center gap-2xsm rounded-pill px-xsm py-2xsm text-desc whitespace-nowrap [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0';
 const BADGE = {
-  distancia: { l: 'Distância', label: 'Distância', icon: 'pin', tone: 'bg-dawn-100 text-dawn-500 dark:bg-dawn-800 dark:text-dawn-200' },
-  tempo: { l: 'Tempo', label: 'Tempo', icon: 'clock', tone: 'bg-feedback-warning-subtle text-dawn-500 dark:text-dawn-200' },
-  calendario: { l: 'Calendário', label: 'Calendário', icon: 'calendar', tone: 'bg-feedback-warning-subtle text-dawn-500 dark:text-dawn-200' },
-  aovivo: { l: 'Ao vivo', label: 'Tocando agora', icon: 'play', tone: 'bg-feedback-warning-subtle text-feedback-danger' },
-  ouro: { l: 'Medalha de ouro', label: 'Medalha de ouro', icon: 'award', tone: 'bg-feedback-warning-subtle text-dawn-500 dark:text-dawn-200' },
-  prata: { l: 'Medalha de prata', label: 'Medalha de prata', icon: 'award', tone: 'bg-bg-subtle text-text-secondary' },
-  bronze: { l: 'Medalha de bronze', label: 'Medalha de bronze', icon: 'award', tone: 'bg-feedback-danger-subtle text-sunset-500 dark:text-sunset-200' },
+  warning: { l: 'warning (padrão)', label: 'Tempo', icon: 'data-e-hora-relogio.outline', tone: 'bg-badge-bg-warning text-badge-text-warning [&>svg]:text-badge-icon-warning' },
+  brand: { l: 'brand', label: 'Distância', icon: 'localizacao-localizacao.outline', tone: 'bg-badge-bg-brand text-badge-text-brand [&>svg]:text-badge-icon-brand' },
+  live: { l: 'live', label: 'Tocando agora', icon: 'notificacao-e-sinalizacao-ao-vivo.outline', tone: 'bg-badge-bg-live text-badge-text-live [&>svg]:text-badge-icon-live' },
+  neutral: { l: 'neutral', label: 'Medalha de prata', icon: 'objetos-medalha.outline', tone: 'bg-badge-bg-neutral text-badge-text-neutral [&>svg]:text-badge-icon-neutral' },
+  danger: { l: 'danger', label: 'Medalha de bronze', icon: 'objetos-medalha.outline', tone: 'bg-badge-bg-danger text-badge-text-danger [&>svg]:text-badge-icon-danger' },
 };
 PG.badge = {
   file: 'Badge.jsx',
   controls: [
-    { k: 'tipo', label: 'Finalidade', type: 'select', opts: Object.keys(BADGE).map(k => [k, BADGE[k].l]), def: 'tempo' },
-    { k: 'icon', label: 'Ícone', type: 'bool', def: true },
+    { k: 'tom', label: 'Tokens de cor', type: 'select', opts: Object.keys(BADGE).map(k => [k, BADGE[k].l]), def: 'warning' },
+    { k: 'leading', label: 'Leading', type: 'bool', def: true },
+    { k: 'icone', label: 'Ícone do Leading', type: 'select', opts: ICON_OPTS, def: BADGE.warning.icon },
     { k: 'label', label: 'Rótulo', type: 'text', def: 'Tempo' },
   ],
-  onChange: (s, k) => { if (k === 'tipo') s.label = BADGE[s.tipo].label; },
-  gallery: 'tipo',
-  galleryApply: (s, v) => ({ label: BADGE[v].label }),
+  onChange: (s, k) => { if (k === 'tom') { s.label = BADGE[s.tom].label; s.icone = BADGE[s.tom].icon; } },
+  gallery: 'tom',
+  galleryApply: (s, v) => ({ label: BADGE[v].label, icone: BADGE[v].icon }),
   stage: () => 'light',
-  tree: s => N('span', BADGE_BASE + ' ' + BADGE[s.tipo].tone, {}, [s.icon && I(BADGE[s.tipo].icon), s.label]),
-  usage: s => `import { Badge } from './Badge';\n\n<Badge${s.tipo !== 'tempo' ? ` tipo="${s.tipo}"` : ''}${s.icon ? ` icon={<${pascal(BADGE[s.tipo].icon)} />}` : ''}>${s.label}</Badge>`,
-  source: () => { const t = {}; for (const k in BADGE) t[k] = BADGE[k].tone; return `const base =\n  '${BADGE_BASE}';\n\nconst tipos = ${fmt(t)};\n\nexport function Badge({ tipo = 'tempo', icon, className = '', children }) {\n  return (\n    <span className={[base, tipos[tipo], className].join(' ')}>\n      {icon}\n      {children}\n    </span>\n  );\n}\n`; },
+  tree: s => N('span', BADGE_BASE + ' ' + BADGE[s.tom].tone, {}, [s.leading && s.icone && I(s.icone), s.label]),
+  usage: s => `import { Badge } from './Badge';\n\n<Badge${s.tom !== 'warning' ? ` tone="${s.tom}"` : ''}${s.leading && s.icone ? ` leading={<${pascal(s.icone)} />}` : ''}>${s.label}</Badge>`,
+  source: () => { const t = {}; for (const k in BADGE) t[k] = BADGE[k].tone; return `const base =\n  '${BADGE_BASE}';\n\n// cada tom usa um par de tokens: color/badge/bg/<tom>, color/badge/text/<tom> + color/badge/icon/<tom>\nconst tones = ${fmt(t)};\n\nexport function Badge({ tone = 'warning', leading, className = '', children }) {\n  return (\n    <span className={[base, tones[tone], className].join(' ')}>\n      {leading}\n      {children}\n    </span>\n  );\n}\n`; },
+};
+
+/* ---------- ICONBUTTON ---------- */
+const IB_BASE = 'inline-flex shrink-0 items-center justify-center rounded-pill p-xsm select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary';
+const IB = {
+  surface: { l: 'surface', bg: 'bg-bg-surface text-icon-default', stage: 'gray' },
+  subtle: { l: 'subtle', bg: 'bg-feedback-warning-subtle text-icon-default', stage: 'light' },
+  'overlay-light': { l: 'overlay-light', bg: 'bg-[rgba(255,255,255,0.24)] text-icon-on-action', stage: 'dark' },
+  'overlay-dark': { l: 'overlay-dark', bg: 'bg-[rgba(0,0,0,0.24)] text-icon-on-action', stage: 'light' },
+  inverse: { l: 'inverse', bg: 'bg-text-primary text-icon-on-action', stage: 'light' },
+};
+const IB_SIZE = { sm: 'h-8 w-8 [&>svg]:h-4 [&>svg]:w-4', md: 'h-10 w-10 [&>svg]:h-6 [&>svg]:w-6' };
+const IB_CTX = {
+  social: { l: 'Redes sociais (página e Footer)', cor: 'surface', tamanho: 'md', icone: 'redes-sociais-instagram.outline', label: 'Instagram' },
+  fechar: { l: 'Fechar ou voltar em Drawer e Modal', cor: 'overlay-light', tamanho: 'sm', icone: 'botoes-de-controle-fechar.outline', label: 'Fechar' },
+  voltar: { l: 'Voltar de página', cor: 'surface', tamanho: 'sm', icone: 'direcionais-seta-esquerda.outline', label: 'Voltar' },
+};
+const ibTree = s => N('button', `${IB_BASE} ${IB[s.cor].bg} ${IB_SIZE[s.tamanho]}`, { type: 'button', 'aria-label': s.label }, [s.icone && I(s.icone)]);
+PG.iconbutton = {
+  file: 'IconButton.jsx',
+  controls: [
+    { k: 'contexto', label: 'Contexto de uso', type: 'select', opts: Object.keys(IB_CTX).map(k => [k, IB_CTX[k].l]), def: 'social' },
+    { k: 'cor', label: 'Cor', type: 'select', opts: Object.keys(IB).map(k => [k, IB[k].l]), def: 'surface' },
+    { k: 'tamanho', label: 'Tamanho', type: 'seg', opts: [['sm', 'sm · 32 px'], ['md', 'md · 40 px']], def: 'md' },
+    { k: 'icone', label: 'Ícone', type: 'select', opts: ICON_OPTS, def: IB_CTX.social.icone },
+    { k: 'label', label: 'Nome acessível (aria-label)', type: 'text', def: 'Instagram' },
+  ],
+  onChange: (s, k) => { if (k === 'contexto') Object.assign(s, { cor: IB_CTX[s.contexto].cor, tamanho: IB_CTX[s.contexto].tamanho, icone: IB_CTX[s.contexto].icone, label: IB_CTX[s.contexto].label }); },
+  gallery: 'cor',
+  stage: s => IB[s.cor].stage,
+  tree: ibTree,
+  usage: s => `import { IconButton } from './IconButton';\n\n<IconButton${s.cor !== 'surface' ? ` color="${s.cor}"` : ''}${s.tamanho !== 'md' ? ` size="${s.tamanho}"` : ''} label="${s.label}" icon={<${pascal(s.icone || 'botoes-de-controle-fechar.outline')} />} />`,
+  source: () => { const c = {}; for (const k in IB) c[k] = IB[k].bg; return `const base =\n  '${IB_BASE}';\n\nconst colors = ${fmt(c)};\n\nconst sizes = ${fmt(IB_SIZE)};\n\n// label vira o aria-label: o botão não tem texto visível\nexport function IconButton({\n  color = 'surface',\n  size = 'md',\n  label,\n  icon,\n  className = '',\n  ...props\n}) {\n  return (\n    <button\n      type="button"\n      aria-label={label}\n      className={[base, colors[color], sizes[size], className].join(' ')}\n      {...props}\n    >\n      {icon}\n    </button>\n  );\n}\n`; },
 };
 
 /* ---------- CHIP ---------- */
@@ -882,7 +961,7 @@ const SHADE = 'bg-gradient-to-t from-[#05051c]/90 via-[#05051c]/30 to-transparen
 const PRICE_TXT = { gratis: 'Grátis', fixo: 'R$ 45,00', lote: '1º lote · R$ 30,00' };
 
 /* ---------- CARD ---------- */
-const CARD_TYPES = [['estab', 'Estabelecimento'], ['artista', 'Artista'], ['produto', 'Product card'], ['small', 'Small'], ['preco', 'Pricing action']];
+const CARD_TYPES = [['produto', 'Product card'], ['small', 'Small'], ['preco', 'Pricing action']];
 const cardSize = s => {
   const h = s.listagem === 'horizontal';
   if (s.tipo === 'estab') return h ? 'h-[256px] w-[200px]' : 'h-[187px] w-[312px]';
@@ -902,8 +981,7 @@ const cardTree = s => {
 PG.card = {
   file: 'Card.jsx',
   controls: [
-    { k: 'tipo', label: 'Tipo', type: 'select', opts: CARD_TYPES, def: 'estab' },
-    { k: 'listagem', label: 'Listagem', type: 'seg', opts: [['vertical', 'Vertical'], ['horizontal', 'Horizontal']], def: 'vertical' },
+    { k: 'tipo', label: 'Tipo', type: 'select', opts: CARD_TYPES, def: 'produto' },
     { k: 'titulo', label: 'Título', type: 'text', def: 'Bar do Zé' },
     { k: 'sub', label: 'Subtítulo', type: 'text', def: 'Bar' },
     { k: 'preco', label: 'Preço (Pricing action)', type: 'seg', opts: [['gratis', 'Grátis'], ['fixo', 'Fixo'], ['lote', 'Lote']], def: 'fixo' },
@@ -914,6 +992,40 @@ PG.card = {
   tree: cardTree,
   usage: s => `import { Card } from './Card';\n\n<Card\n  tipo="${s.tipo}"\n  ${s.tipo === 'estab' || s.tipo === 'artista' ? `listagem="${s.listagem}"\n  ` : ''}${s.tipo === 'preco' ? `preco="${s.preco}"` : `titulo="${s.titulo}"\n  subtitulo="${s.sub}"\n  imagem="/imagens/card.jpg"`}${s.badge && s.tipo !== 'preco' ? '\n  destaque' : ''}\n/>`,
   source: () => `const image = '${SHADE}';\n\n/* Cards com imagem de fundo (Estabelecimento e Artista) */\nexport function Card({ titulo, subtitulo, imagem, listagem = 'vertical', destaque }) {\n  const size = listagem === 'horizontal' ? 'h-[256px] w-[200px]' : 'h-[187px] w-[312px]';\n  return (\n    <article\n      className={\`relative flex items-end overflow-hidden rounded-xsm bg-cover bg-center \${size} \${destaque ? 'ring-2 ring-feedback-danger' : ''}\`}\n      style={{ backgroundImage: \`url(\${imagem})\` }}\n    >\n      <div className={\`absolute inset-0 \${image}\`} />\n      <div className="relative flex flex-col gap-2xsm p-m text-text-on-action">\n        <p className="text-desc">{subtitulo}</p>\n        <h3 className="font-display text-h6-m font-bold">{titulo}</h3>\n      </div>\n    </article>\n  );\n}\n`,
+};
+
+/* ---------- EVENTCARD ---------- */
+const ecTree = s => {
+  const sob = iconDesc('musica-banda.outline', s.sub, s.listagem === 'vertical' ? 'text-text-secondary' : 'text-text-on-action');
+  const dat = iconDesc(K.cal, s.data, s.listagem === 'vertical' ? 'text-text-secondary' : 'text-text-on-action');
+  const loc = iconDesc(K.pin, s.local, s.listagem === 'vertical' ? 'text-text-secondary' : 'text-text-on-action');
+  if (s.listagem === 'vertical') return N('a', 'flex w-[312px] max-w-full items-center gap-sm', { href: '#' }, [
+    N('div', 'h-[90px] w-[88px] shrink-0 ' + IMG_BG, { role: 'img', 'aria-label': 'Imagem de ' + s.titulo }),
+    N('div', 'flex min-w-0 flex-1 flex-col gap-2xsm', {}, [sob, TXT('truncate text-body font-semibold text-text-primary', s.titulo), dat, loc])], { p: { 'data-noop': '1' } });
+  return N('a', 'relative flex h-[252px] w-[200px] items-end overflow-hidden rounded-xsm ' + IMG_BG + (s.highlight ? ' ring-4 ring-inset ring-feedback-danger' : ''), { href: '#', role: 'img', 'aria-label': 'Imagem de ' + s.titulo }, [
+    N('div', 'absolute inset-0 ' + SHADE, {}),
+    N('div', 'relative flex w-full flex-col gap-sm p-m text-text-on-action', {}, [
+      s.badge && N('span', BADGE_BASE + ' w-fit ' + BADGE.brand.tone, {}, [I(K.pin), 'Distância']),
+      s.brasao && N('div', 'flex items-center gap-xsm', {}, [N('span', 'h-[56px] w-[56px] rounded-pill bg-bg-surface', { 'aria-hidden': 'true' }), N('span', 'text-icon-on-action [&>svg]:h-m [&>svg]:w-m', { 'aria-hidden': 'true' }, [I(K.fechar)]), N('span', 'h-[56px] w-[56px] rounded-pill bg-bg-surface', { 'aria-hidden': 'true' })]),
+      N('div', 'flex flex-col gap-2xsm', {}, [sob, TXT('text-body font-semibold', s.titulo), dat, loc])])], { p: { 'data-noop': '1' } });
+};
+PG.eventcard = {
+  file: 'EventCard.jsx',
+  controls: [
+    { k: 'listagem', label: 'Listagem', type: 'seg', opts: [['horizontal', 'Horizontal · carrossel'], ['vertical', 'Vertical · agenda e listagens']], def: 'horizontal' },
+    { k: 'highlight', label: 'Highlight (só na horizontal)', type: 'bool', def: false },
+    { k: 'badge', label: 'Badge (só na horizontal)', type: 'bool', def: true },
+    { k: 'brasao', label: 'Brasão futebol (só na horizontal)', type: 'bool', def: false },
+    { k: 'titulo', label: 'Título', type: 'text', def: 'Los Campesinos' },
+    { k: 'sub', label: 'Sobrancelha', type: 'text', def: 'Samba • Rock' },
+    { k: 'data', label: 'Data e hora', type: 'text', def: '19/10 • 14h' },
+    { k: 'local', label: 'Local', type: 'text', def: 'Vila Madalena' },
+  ],
+  gallery: 'listagem',
+  stage: s => s.listagem === 'vertical' ? 'light' : 'gray',
+  tree: ecTree,
+  usage: s => `import { EventCard } from './EventCard';\n\n<EventCard\n  ${s.listagem === 'vertical' ? 'listing="vertical"\n  ' : ''}title="${s.titulo}"\n  eyebrow="${s.sub}"\n  date="${s.data}"\n  place="${s.local}"\n  image="/imagens/evento.jpg"${s.listagem === 'horizontal' && s.highlight ? '\n  highlight' : ''}${s.listagem === 'horizontal' && !s.badge ? '\n  badge={false}' : ''}\n/>`,
+  source: () => `// Horizontal: carrosséis. Vertical: agenda de artista, de estabelecimento e listagens.\nconst layouts = {\n  horizontal:\n    'relative flex h-[252px] w-[200px] items-end overflow-hidden rounded-xsm bg-cover bg-center text-text-on-action',\n  vertical: 'flex w-[312px] max-w-full items-center gap-sm text-text-primary',\n};\n\nexport function EventCard({ listing = 'horizontal', highlight, title, eyebrow, date, place, image, href = '#' }) {\n  if (listing === 'vertical') {\n    return (\n      <a href={href} className={layouts.vertical}>\n        <img src={image} alt="" className="h-[90px] w-[88px] shrink-0 object-cover" />\n        <div className="flex min-w-0 flex-1 flex-col gap-2xsm">\n          <p className="text-desc text-text-secondary">{eyebrow}</p>\n          <h3 className="truncate text-body font-semibold">{title}</h3>\n          <p className="text-desc text-text-secondary">{date}</p>\n          <p className="text-desc text-text-secondary">{place}</p>\n        </div>\n      </a>\n    );\n  }\n  return (\n    <a\n      href={href}\n      style={{ backgroundImage: \`url(\${image})\` }}\n      className={\`\${layouts.horizontal} \${highlight ? 'ring-4 ring-inset ring-feedback-danger' : ''}\`}\n    >\n      <div className="absolute inset-0 bg-gradient-to-t from-[#05051c]/90 via-[#05051c]/30 to-transparent" />\n      <div className="relative flex w-full flex-col gap-2xsm p-m">\n        <p className="text-desc">{eyebrow}</p>\n        <h3 className="text-body font-semibold">{title}</h3>\n        <p className="text-desc">{date}</p>\n        <p className="text-desc">{place}</p>\n      </div>\n    </a>\n  );\n}\n`,
 };
 
 /* ---------- MODAL (Ticket de resumo) ---------- */
@@ -1095,16 +1207,22 @@ const B = (b, h, rows) => ({ b, h: h || '', r: rows });
 const ANAT = 'medidas lidas do componente (primeira variante)';
 const DOCS = [
 /* ================= ÁTOMOS ================= */
-{ id: 'badge', n: 'Badge', lv: 'a', fg: '9-1002', s: '2 componentes · 8 variantes · tokens da coleção Semantic',
-  v: [B('Átomo/Badge', '7 variantes · Icon: True · Finalidade: Distância, Tempo, Medalha de ouro, Medalha de prata, Medalha de bronze, Ao vivo, Calendário', [
-    ['Distância', '89 × 26 px · fundo: color scheme/brand/night/lightest · texto: Dawn/500'], ['Tempo', '75 × 26 px · fundo: color/feedback/warning-subtle · texto: color scheme/brand/summer/dawn'], ['Calendário', '98 × 26 px · fundo: color/feedback/warning-subtle · texto: color scheme/brand/summer/dawn'], ['Ao vivo', '121 × 26 px · fundo: color/feedback/warning-subtle · texto: color scheme/brand/summer/sunny'], ['Medalha de ouro', '132 × 26 px · fundo: color/feedback/warning-subtle · texto: color scheme/brand/summer/dawn'], ['Medalha de prata', '136 × 26 px · fundo: color/bg/subtle · texto: color/text/secondary'], ['Medalha de bronze', '145 × 26 px · fundo: color/feedback/danger-subtle · texto: Sunset/500']]),
+{ id: 'badge', n: 'Badge', lv: 'a', fg: '9-1002', s: '2 componentes · 1 propriedade booleana · tokens da coleção Semantic',
+  v: [B('Átomo/Badge', 'componente único · propriedade Leading (booleana) · tokens de cor por tom', [
+    ['Tokens warning (padrão)', '75 × 26 px · fundo: color/badge/bg/warning · texto: color/badge/text/warning · ícone: color/badge/icon/warning'], ['Tokens brand', '89 × 26 px · fundo: color/badge/bg/brand · texto: color/badge/text/brand · ícone: color/badge/icon/brand'], ['Tokens live', '121 × 26 px · fundo: color/badge/bg/live · texto: color/badge/text/live · ícone: color/badge/icon/live'], ['Tokens neutral', '136 × 26 px · fundo: color/badge/bg/neutral · texto: color/badge/text/neutral · ícone: color/badge/icon/neutral'], ['Tokens danger', '145 × 26 px · fundo: color/badge/bg/danger · texto: color/badge/text/danger · ícone: color/badge/icon/danger'], ['Leading desligado', '55 × 26 px · sem ícone · tokens warning']]),
     B('Átomo/Data', 'componente único', [['Padrão', '64 × 73 px · fundo: #ffffff (sem token) · texto: color/text/secondary · borda: #f7f7f7 (sem token)']])],
-  p: [B('Átomo/Badge', '', [['Icon', 'Variante. Opções: True.'], ['Finalidade', 'Variante. Opções: Distância, Tempo, Medalha de ouro, Medalha de prata, Medalha de bronze, Ao vivo, Calendário.']]), B('Átomo/Data', '', [['Mês', 'Booleana. Padrão: ligado.']])],
-  a: [B('Átomo/Badge', ANAT, [['Dimensões', '75–145 × 26 px (varia entre variantes)'], ['Layout', 'Horizontal · padding T/D/B/E 4 / 8 / 4 / 8 px · gap 4 px'], ['Raio', '1000 (radius/pill) px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Icon · Label']]), B('Átomo/Data', ANAT, [['Dimensões', '64 × 73 px'], ['Layout', 'Vertical · padding T/D/B/E 8 / 16 / 8 / 16 px · gap 0 px'], ['Raio', '16 px'], ['Borda', '1 px · #f7f7f7 (sem token)'], ['Tipografia', 'Descrição/Pequena · Mobile/Título/H6'], ['Camadas', 'Mês · Dia · Semana']])] },
+  p: [B('Átomo/Badge', '', [['Leading', 'Booleana. Padrão: ligado. Mostra ou oculta o ícone à esquerda do rótulo.'], ['Cor', 'Definida por tokens, não por variante: color/badge/bg/<tom>, color/badge/text/<tom> e color/badge/icon/<tom>, com os tons brand, warning, live, neutral e danger.']]), B('Átomo/Data', '', [['Mês', 'Booleana. Padrão: ligado.']])],
+  a: [B('Átomo/Badge', ANAT, [['Dimensões', 'Largura varia com o rótulo · 26 px de altura'], ['Layout', 'Horizontal · padding T/D/B/E 4 / 8 / 4 / 8 px · gap 4 px'], ['Raio', '1000 (radius/pill) px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Icon (visível pela propriedade Leading) · Label']]), B('Átomo/Data', ANAT, [['Dimensões', '64 × 73 px'], ['Layout', 'Vertical · padding T/D/B/E 8 / 16 / 8 / 16 px · gap 0 px'], ['Raio', '16 px'], ['Borda', '1 px · #f7f7f7 (sem token)'], ['Tipografia', 'Descrição/Pequena · Mobile/Título/H6'], ['Camadas', 'Mês · Dia · Semana']])] },
 
-{ id: 'botao', n: 'Botão', lv: 'a', fg: '9-996', s: '5 componentes · 122 variantes · tokens da coleção Semantic', custom: true,
-  p: [B('Sale, Primary, Sucesso, Secondary, Inverse, Soft e Ghost', '', [['Leading', 'Booleana. Mostra o ícone antes do rótulo.'], ['Trailing', 'Booleana. Mostra o ícone depois do rótulo.'], ['Ícone escolhido', 'Troca de instância.'], ['Tamanho', 'Variante. Opções: LG, MD, SM.'], ['Estado', 'Variante. Opções: _active, _hover, _clicked (Sucesso: _active, _hover). Variante: Sale, Primary, Sucesso, Secondary, Primary Inverse, Secondary Inverse, Soft, Ghost.'], ['Disable', 'Variante. Opções: false, true.']]), B('Float/Voltar', '', [['Ícone', 'Troca de instância.'], ['Inverted', 'Variante. Opções: True, False.'], ['Transparent', 'Variante. Opções: True, False.']]), B('Circular', '', [['Ícone', 'Troca de instância.'], ['Cor', 'Variante. Opções: midday-light, neutral-lightest.']])],
-  a: [B('Float/Voltar', 'botão flutuante · 4 variantes', [['Dimensões', '32 × 32 px'], ['Fundo', 'Inverted + Transparent: branco 24% · Inverted: color/bg/surface · Transparent: preto 24% · padrão: color/text/primary']]), B('Circular', 'botão de ícone · 2 variantes', [['Dimensões', '40 × 40 px'], ['midday-light', 'fundo: color/feedback/warning-subtle'], ['neutral-lightest', 'fundo: color/bg/surface']])] },
+{ id: 'iconbutton', n: 'IconButton', lv: 'a', fg: '1830-16', s: '1 componente · 10 variantes · tokens da coleção Semantic',
+  v: [B('Átomo/IconButton', 'componente único · 5 cores × 2 tamanhos · troca de ícone', [
+    ['Cor surface', '32 × 32 px (sm) · 40 × 40 px (md) · fundo: color/bg/surface · ícone: color/icon/default'], ['Cor subtle', '32 × 32 px (sm) · 40 × 40 px (md) · fundo: color/feedback/warning-subtle · ícone: color/icon/default'], ['Cor overlay-light', '32 × 32 px (sm) · 40 × 40 px (md) · fundo: #ffffff 24% (sem token) · ícone: color/icon/on-action'], ['Cor overlay-dark', '32 × 32 px (sm) · 40 × 40 px (md) · fundo: #000000 24% (sem token) · ícone: color/icon/on-action'], ['Cor inverse', '32 × 32 px (sm) · 40 × 40 px (md) · fundo: color/text/primary · ícone: color/icon/on-action']])],
+  p: [B('Átomo/IconButton', '', [['Ícone', 'Troca de instância. Padrão: Botões de Controle/fechar. Aceita ícones de controle, direcionais e redes sociais.'], ['Cor', 'Variante com 5 opções: surface, subtle, overlay-light, overlay-dark e inverse.'], ['Tamanho', 'Variante com 2 opções: sm (32 px, ícone de 16 px) e md (40 px, ícone de 24 px).']])],
+  a: [B('Átomo/IconButton', 'medidas lidas do componente', [['Dimensões', '32 × 32 px (sm) · 40 × 40 px (md)'], ['Layout', 'Horizontal · padding 8 px · ícone centralizado'], ['Raio', '1000 (radius/pill) px · sempre circular'], ['Camadas', 'Ícone (instância trocável: 16 px no sm, 24 px no md)']])] },
+
+{ id: 'botao', n: 'Botão', lv: 'a', fg: '9-996', s: '3 componentes · 116 variantes · tokens da coleção Semantic', custom: true,
+  p: [B('Sale, Primary, Sucesso, Secondary, Inverse, Soft e Ghost', '', [['Leading', 'Booleana. Mostra o ícone antes do rótulo.'], ['Trailing', 'Booleana. Mostra o ícone depois do rótulo.'], ['Ícone escolhido', 'Troca de instância.'], ['Tamanho', 'Variante. Opções: LG, MD, SM.'], ['Estado', 'Variante. Opções: _active, _hover, _clicked (Sucesso: _active, _hover). Variante: Sale, Primary, Sucesso, Secondary, Primary Inverse, Secondary Inverse, Soft, Ghost.'], ['Disable', 'Variante. Opções: false, true.']])],
+  a: [] },
 
 { id: 'chip', n: 'Chip', lv: 'a', fg: '9-1000', s: '2 componentes · 29 variantes · tokens da coleção Semantic',
   v: [B('Chips', '28 variantes · Checked: True, False · Habilitado: True, False · Destaque: True, False · Tipo: White, Twilight, Gray, Gradient · Tamanho: Medium, Small', [['Twilight · Medium', '83–84 × 37 px · fundo: color/action/primary · texto: color/text/on-action (selecionado) ou color/action/primary (borda 1 px)'], ['Gradient', 'fundo e borda em degradê #d43599 → #e11410 (sem token) · Destaque: True'], ['White', 'fundo: color/bg/surface · texto: color/action/primary (selecionado)'], ['Gray', 'fundo: color/bg/subtle · texto: color/text/secondary'], ['Desabilitado', 'opacidade 32%']]), B('Carrossel de filtros', 'componente único', [['Padrão', '83 × 37 px · fundo: transparente · texto: color/action/primary']])],
@@ -1185,10 +1303,15 @@ const DOCS = [
   p: [B('Átomo/Item', '', [['Final', 'Variante. Opções: True, False.']]), B('Molécula/Breadcrumb', '', [['Passo 2', 'Booleana. Padrão: ligado.'], ['Passo 3', 'Booleana. Padrão: ligado.']])],
   a: [B('Átomo/Item', ANAT, [['Dimensões', '62–86 × 18 px (varia entre variantes)'], ['Layout', 'Horizontal · padding 0 nos 4 lados px · gap 0 px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Link']]), B('Molécula/Breadcrumb', ANAT, [['Dimensões', '360 × 50 px'], ['Layout', 'Horizontal · padding T/D/B/E 16 (spacing/sm) / 24 (spacing/m) / 16 (spacing/sm) / 24 (spacing/m) px · gap 8 (spacing/xsm) px'], ['Tipografia', 'Descrição/Pequena'], ['Camadas', 'Bar e Lugares/casa · Átomo/Item (3×)']])] },
 
-{ id: 'card', n: 'Card', lv: 'm', fg: '9-1023', s: '5 componentes · 15 variantes · tokens da coleção Semantic',
-  v: [B('Estabelecimento', '4 variantes · Resolução: Mobile, Desktop · Listagem: Horizontal, Vertical', [['Vertical', '312 × 187 px · fundo: imagem + gradiente (sem token) · texto: Dawn/500'], ['Horizontal', '200 × 256 px · fundo: imagem + gradiente (sem token) · texto: Dawn/500']]), B('Artista', '6 variantes · Resolução: Mobile, Desktop · Listagem: Vertical, Horizontal · Highlight: False, True', [['Mobile · Vertical', '312 × 326 px · fundo: imagem + gradiente (sem token) · texto: Dawn/500'], ['Mobile · Horizontal', '200 × 252 px'], ['Desktop · Horizontal', '288 × 256 px'], ['Highlight: True', 'borda: color/feedback/danger']]), B('Product card', 'componente único', [['Padrão', '200 × 235 px · texto: Dawn/500']]), B('Small', 'componente único', [['Padrão', '120 × 152 px · texto: color/text/on-action']]), B('Pricing action', '3 variantes · Preço: Grátis, Fixo, Lote', [['Grátis · Fixo', '101 × 37 px'], ['Lote', '101 × 59 px · texto: color/text/on-action']])],
-  p: [B('Estabelecimento', '', [['Badge', 'Booleana. Padrão: ligado.'], ['Resolução', 'Variante. Opções: Mobile, Desktop.'], ['Listagem', 'Variante. Opções: Horizontal, Vertical.']]), B('Artista', '', [['Badge', 'Booleana. Padrão: ligado.'], ['Blur', 'Booleana. Padrão: desligado.'], ['Brasão futebol', 'Booleana. Padrão: ligado.'], ['Balão', 'Booleana. Padrão: desligado.'], ['Resolução', 'Variante. Opções: Mobile, Desktop.'], ['Listagem', 'Variante. Opções: Vertical, Horizontal.'], ['Highlight', 'Variante. Opções: False, True.']]), B('Product card', '', [['Desconto', 'Booleana. Padrão: ligado.']]), B('Small', '', [['Blur', 'Booleana. Padrão: ligado.']]), B('Pricing action', '', [['Preço', 'Variante. Opções: Grátis, Fixo, Lote.']])],
-  a: [B('Estabelecimento', ANAT, [['Dimensões', '200–312 × 187–256 px (varia entre variantes)'], ['Layout', 'Horizontal · padding 24 (spacing/m) nos 4 lados px · gap 24 (spacing/m) px'], ['Raio', '16 (radius/xsm) px'], ['Tipografia', 'Descrição/Pequena · Corpo de texto/Grande · Descrição/Grande'], ['Camadas', 'Content Container · Pricing action']]), B('Artista', ANAT, [['Dimensões', '200–312 × 252–326 px (varia entre variantes)'], ['Raio', '16 px'], ['Tipografia', 'Descrição/Pequena · Mobile/Título/H6 · Corpo de texto/Pequeno · Descrição/Grande'], ['Camadas', 'Átomo/Badge · Brasão de time container · Event Info · Blur overlay · Dialog']]), B('Product card', ANAT, [['Dimensões', '200 × 235 px'], ['Layout', 'Vertical · padding 0 · gap 8 (spacing/xsm) px'], ['Tipografia', 'Descrição/Pequena · Corpo de texto/Pequeno · Mobile/Título/H5'], ['Camadas', 'Header · Product details']]), B('Small', ANAT, [['Dimensões', '120 × 152 px'], ['Layout', 'Vertical · padding 0 · gap 4 px'], ['Raio', '8 (radius/3xsm) px'], ['Tipografia', 'Descrição/Pequena · Mobile/Título/H6'], ['Camadas', 'Image · Container']]), B('Pricing action', ANAT, [['Dimensões', '101 × 37–59 px (varia entre variantes)'], ['Tipografia', 'Descrição/Grande'], ['Camadas', 'Primary/Default']])] },
+{ id: 'eventcard', n: 'EventCard', lv: 'm', fg: '9-1023', s: '1 componente · 3 variantes · tokens da coleção Semantic',
+  v: [B('EventCard', '3 variantes · Listagem: Horizontal, Vertical · Highlight: False, True (só na horizontal)', [['Horizontal', '200 × 252 px · fundo: imagem + gradiente (sem token) · texto: color/text/on-action · raio: radius/xsm'], ['Horizontal em destaque', 'mesmas medidas · borda de 4 px: color/feedback/danger (Highlight = True)'], ['Vertical', '312 × 90 px · imagem de 88 × 90 px · texto: color/text/primary']])],
+  p: [B('EventCard', '', [['Badge', 'Booleana. Padrão: ligado. Mostra a badge no topo (só na horizontal).'], ['Blur', 'Booleana. Padrão: desligado. Cobre o card com overlay e o aviso Exclusivo VIP (só na horizontal).'], ['Brasão futebol', 'Booleana. Padrão: ligado. Mostra os brasões dos dois times (só na horizontal).'], ['Balão', 'Booleana. Padrão: desligado. Mostra o balão de promoção (só na horizontal).'], ['Listagem', 'Variante. Opções: Horizontal, Vertical. Define o layout do card.'], ['Highlight', 'Variante. Opções: False, True. Borda de destaque; existe só na Listagem Horizontal.']])],
+  a: [B('EventCard', 'medidas lidas do componente', [['Dimensões', 'Horizontal: 200 × 252 px · Vertical: 312 × 90 px'], ['Layout', 'Horizontal: padding 24 (spacing/m) · gap 16 (spacing/sm) · Vertical: linha, gap 16 (spacing/sm)'], ['Raio', 'Horizontal: 16 (radius/xsm) px · Vertical: sem raio'], ['Tipografia', 'Descrição/Pequena · Corpo de texto/Pequeno/Semi bold'], ['Camadas', 'Horizontal: Brasão de time container · Badge · Sobrancelha + Título + Descrição · Blur overlay · Dialog · Vertical: List image · Sobrancelha + Título + Descrição']])] },
+
+{ id: 'card', n: 'Card', lv: 'm', fg: '1814-17534', s: '3 componentes · 5 variantes · tokens da coleção Semantic',
+  v: [B('Product card', 'componente único', [['Padrão', '200 × 235 px · texto: Dawn/500']]), B('Small', 'componente único', [['Padrão', '120 × 152 px · texto: color/text/on-action']]), B('Pricing action', '3 variantes · Preço: Grátis, Fixo, Lote', [['Grátis · Fixo', '101 × 37 px'], ['Lote', '101 × 59 px · texto: color/text/on-action']])],
+  p: [B('Product card', '', [['Desconto', 'Booleana. Padrão: ligado.']]), B('Small', '', [['Blur', 'Booleana. Padrão: ligado.']]), B('Pricing action', '', [['Preço', 'Variante. Opções: Grátis, Fixo, Lote.']])],
+  a: [B('Product card', ANAT, [['Dimensões', '200 × 235 px'], ['Layout', 'Vertical · padding 0 · gap 8 (spacing/xsm) px'], ['Tipografia', 'Descrição/Pequena · Corpo de texto/Pequeno · Mobile/Título/H5'], ['Camadas', 'Header · Product details']]), B('Small', ANAT, [['Dimensões', '120 × 152 px'], ['Layout', 'Vertical · padding 0 · gap 4 px'], ['Raio', '8 (radius/3xsm) px'], ['Tipografia', 'Descrição/Pequena · Mobile/Título/H6'], ['Camadas', 'Image · Container']]), B('Pricing action', ANAT, [['Dimensões', '101 × 37–59 px (varia entre variantes)'], ['Tipografia', 'Descrição/Grande'], ['Camadas', 'Primary/Default']])] },
 
 { id: 'faq', n: 'FAQ', lv: 'm', fg: '302-792', s: '1 componente · 2 variantes · tokens da coleção Semantic',
   v: [B('Molécula/FAQ', '2 variantes · Resolução: Mobile, Desktop', [['Mobile', '360 × 581 px · fundo: color/bg/subtle · texto: #000000 (sem token)'], ['Desktop', '1440 × 504 px · fundo: color/bg/subtle · texto: color/text/primary']])],
@@ -1428,7 +1551,7 @@ const CODE_STORE = {}; let codeSeq = 0;
 const storeCode = t => { const id = 'c' + (++codeSeq); CODE_STORE[id] = t; return id; };
 
 /* ---------- Rotas / navegação ---------- */
-const FOUNDATIONS = [['cores', 'Cores'], ['tipografia', 'Tipografia'], ['grids', 'Grids'], ['voz', 'Tom de voz']];
+const FOUNDATIONS = [['cores', 'Cores'], ['tipografia', 'Tipografia'], ['grids', 'Grids'], ['raio', 'Border radius'], ['voz', 'Tom de voz']];
 const ROUTES = new Set(['inicio', ...DOCS.map(d => d.id), ...FOUNDATIONS.map(f => f[0])]);
 let current = 'botao';
 let navFilter = '';
@@ -1474,7 +1597,7 @@ function rowsBlock(b, mark) {
   return `<div class="flex min-w-0 flex-col gap-lg">${blockHead(b.b, b.h)}<div class="flex flex-col gap-lg">${b.r.map(([a, d]) => `<div class="flex flex-col gap-2xsm"><p class="text-body text-text-primary">${esc(a)}</p><p class="text-desc text-text-secondary">${mark ? legacyMark(d) : esc(d)}</p></div>`).join('')}</div></div>`;
 }
 const placeholder = t => `<div class="rounded-xsm border border-dashed border-border-strong bg-bg-subtle p-m text-desc-lg text-text-secondary">${t}</div>`;
-const card = (inner, cls = '') => `<div class="rounded-xsm bg-bg-surface p-m ${cls}">${inner}</div>`;
+const card = (inner, cls = '') => `<div class="rounded-xlg bg-bg-surface p-m ${cls}">${inner}</div>`;
 
 function copyBtn(codeId, label = 'Copiar') {
   return `<button type="button" data-copy="${codeId}" class="inline-flex items-center gap-2xsm rounded-pill bg-neutral-800 px-sm py-2xsm text-desc font-bold text-neutral-100 hover:bg-neutral-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-neutral-50 [&>svg]:h-4 [&>svg]:w-4">${svg('check').replace(/<path d="M20 6 9 17l-5-5"\/>/, '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>')}<span>${label}</span></button>`;
@@ -1485,7 +1608,7 @@ function hl(code) {
 }
 function codeBlock(code, label) {
   const id = storeCode(code);
-  return `<div class="code-wrap overflow-hidden rounded-xsm bg-neutral-900"><div class="flex items-center justify-between gap-sm px-sm py-xsm">${label ? `<span class="text-desc font-semibold text-neutral-300">${label}</span>` : '<span></span>'}${copyBtn(id)}</div><pre class="code max-h-[28rem] overflow-auto px-sm pb-sm text-desc leading-relaxed text-neutral-100"><code>${hl(code)}</code></pre></div>`;
+  return `<div class="code-wrap overflow-hidden rounded-3xsm bg-neutral-900"><div class="flex items-center justify-between gap-sm px-sm py-xsm">${label ? `<span class="text-desc font-semibold text-neutral-300">${label}</span>` : '<span></span>'}${copyBtn(id)}</div><pre class="code max-h-[28rem] overflow-auto px-sm pb-sm text-desc leading-relaxed text-neutral-100"><code>${hl(code)}</code></pre></div>`;
 }
 async function copyText(t) {
   try { await navigator.clipboard.writeText(t); return true; } catch (e) {
@@ -1514,7 +1637,7 @@ function controlHtml(c, s) {
 }
 function pgPreview(id) {
   const d = PG[id], s = pgState[id];
-  return `<div class="flex min-h-[180px] overflow-auto rounded-xsm p-xlg ${STAGES[stageOf(id)]}" data-pg-stage><div class="m-auto">${renderPreview(d.tree(s, true))}</div></div>`;
+  return `<div class="flex min-h-[180px] overflow-auto rounded-3xsm p-xlg ${STAGES[stageOf(id)]}" data-pg-stage><div class="m-auto">${renderPreview(d.tree(s, true))}</div></div>`;
 }
 function pgGallery(id) {
   const d = PG[id]; if (!d.gallery) return '';
@@ -1522,7 +1645,7 @@ function pgGallery(id) {
   const items = c.opts.map(([val, l]) => {
     const s2 = Object.assign({}, pgState[id], { [d.gallery]: val }, d.galleryApply ? d.galleryApply(pgState[id], val) : {});
     const st = pgState[id].stage || autoStage(d.stage(s2));
-    return `<div class="flex flex-col items-center gap-xsm"><div class="flex min-h-[72px] min-w-[128px] items-center justify-center rounded-xsm p-sm ${STAGES[st]}">${renderPreview(d.tree(s2, true))}</div><span class="text-desc text-text-secondary">${l}</span></div>`;
+    return `<div class="flex flex-col items-center gap-xsm"><div class="flex min-h-[72px] min-w-[128px] items-center justify-center rounded-3xsm p-sm ${STAGES[st]}">${renderPreview(d.tree(s2, true))}</div><span class="text-desc text-text-secondary">${l}</span></div>`;
   });
   return `<div class="flex flex-col gap-sm"><p class="text-eyebrow font-bold uppercase text-text-secondary">Todas as opções de ${c.label.toLowerCase()}</p><div class="flex flex-wrap gap-sm">${items.join('')}</div></div>`;
 }
@@ -1565,7 +1688,7 @@ function botaoSpecs() {
   return [
     section('Variantes e estados', `${matrix}${grid2([`<div class="flex flex-col gap-lg">${blockHead('Tamanhos', 'ícone 16 × 16 px · espaço ícone–rótulo 4 px (spacing/2xsm) · raio pill (radius/pill) · altura de linha 150%')}${sizes}</div>`, `<div class="flex flex-col gap-lg">${blockHead('Estados', 'aplicados sobre a cor de cada variante')}${st}</div>`])}`),
     section('Propriedades', grid2(d.p.map(b => rowsBlock(b)))),
-    section('Anatomia', grid2(d.a.map(b => rowsBlock(b)))),
+    d.a.length ? section('Anatomia', grid2(d.a.map(b => rowsBlock(b)))) : '',
     section('Diretrizes de uso', `<div class="flex flex-col gap-lg">${blockHead('Variantes e hierarquia', '')}</div>${grid2(BTN_GUIDE.map(([a, b]) => `<div class="flex flex-col gap-2xsm"><p class="text-body text-text-primary">${a}</p><p class="max-w-prose text-desc-lg text-text-secondary">${esc(b)}</p></div>`))}`),
     section("Do & Don't", BTN_DOS.map(p => grid2([doCard(true, p.ok, p.okT), doCard(false, p.no, p.noT)])).join('')),
   ].join('');
@@ -1584,14 +1707,14 @@ function icFiltered() { const q = norm(icQ); return DS_ICONS.filter(i => (icStyl
 function icGrid() {
   const l = icFiltered();
   if (!l.length) return '<p class="py-m text-desc-lg text-text-secondary">Nenhum ícone encontrado.</p>';
-  return `<div class="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-xsm">${l.map(i => `<button type="button" data-ic="${i.k}" aria-pressed="${icSel === i.k}" title="${escA(i.f)}" class="flex min-w-0 flex-col items-center gap-xsm rounded-xsm border p-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-action-primary ${icSel === i.k ? 'border-action-primary bg-bg-brand-subtle' : 'border-border-default hover:bg-bg-subtle'}"><span class="text-icon-default [&>svg]:h-6 [&>svg]:w-6">${i.svg}</span><span class="w-full truncate text-center text-desc text-text-secondary">${esc(icLabel(i))}</span></button>`).join('')}</div>`;
+  return `<div class="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-xsm">${l.map(i => `<button type="button" data-ic="${i.k}" aria-pressed="${icSel === i.k}" title="${escA(i.f)}" class="flex min-w-0 flex-col items-center gap-xsm rounded-3xsm border p-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-action-primary ${icSel === i.k ? 'border-action-primary bg-bg-brand-subtle' : 'border-border-default hover:bg-bg-subtle'}"><span class="text-icon-default [&>svg]:h-6 [&>svg]:w-6">${i.svg}</span><span class="w-full truncate text-center text-desc text-text-secondary">${esc(icLabel(i))}</span></button>`).join('')}</div>`;
 }
 function icDetail() {
   const i = icSel && DS_ICON_BY_KEY[icSel];
-  if (!i) return `<div class="rounded-xsm border border-dashed border-border-strong bg-bg-subtle p-m text-desc-lg text-text-secondary">Selecione um ícone para ver o nome, o código e copiar o SVG.</div>`;
+  if (!i) return `<div class="rounded-xlg border border-dashed border-border-strong bg-bg-subtle p-m text-desc-lg text-text-secondary">Selecione um ícone para ver o nome, o código e copiar o SVG.</div>`;
   const usage = `<Icon name="${i.n}"${i.s !== 'outline' ? ` variant="${i.s}"` : ''} size={24} />`;
   const imp = `import { ${i.comp} } from './icons';\n\n<${i.comp} className="size-6" />`;
-  return `<div class="flex flex-col gap-m rounded-xsm bg-bg-surface p-m"><div class="flex items-center gap-m"><span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-xsm bg-bg-subtle text-icon-default [&>svg]:h-8 [&>svg]:w-8">${i.svg}</span><div class="flex min-w-0 flex-col gap-2xsm"><p class="font-display text-h6-m font-bold text-text-primary md:text-h6">${esc(icLabel(i))}</p><p class="text-desc text-text-secondary">Figma: ${esc(i.f)} · estilo ${i.s}${i.m ? ' · várias cores (não herda a cor do texto)' : ''}</p></div></div>${codeBlock(usage, 'React · componente Icon')}${codeBlock(imp, 'React · import direto')}<div class="flex flex-wrap items-center gap-sm">${copyBtn(storeCode(i.svg), 'Copiar SVG')}${copyBtn(storeCode(i.n), 'Copiar nome')}</div></div>`;
+  return `<div class="flex flex-col gap-m rounded-xlg bg-bg-surface p-m"><div class="flex items-center gap-m"><span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xsm bg-bg-subtle text-icon-default [&>svg]:h-8 [&>svg]:w-8">${i.svg}</span><div class="flex min-w-0 flex-col gap-2xsm"><p class="font-display text-h6-m font-bold text-text-primary md:text-h6">${esc(icLabel(i))}</p><p class="text-desc text-text-secondary">Figma: ${esc(i.f)} · estilo ${i.s}${i.m ? ' · várias cores (não herda a cor do texto)' : ''}</p></div></div>${codeBlock(usage, 'React · componente Icon')}${codeBlock(imp, 'React · import direto')}<div class="flex flex-wrap items-center gap-sm">${copyBtn(storeCode(i.svg), 'Copiar SVG')}${copyBtn(storeCode(i.n), 'Copiar nome')}</div></div>`;
 }
 function renderIconLib() {
   const sel = (id, opts, val) => `<select id="${id}" class="min-w-0 rounded-pill border border-border-default bg-bg-surface px-sm py-xsm text-desc-lg text-text-primary focus:outline focus:outline-2 focus:outline-action-primary">${opts.map(([v, l]) => `<option value="${escA(v)}"${v === val ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
@@ -1611,11 +1734,58 @@ function genericSpecs(d) {
   out.push(section("Do & Don't", placeholder('Os exemplos de boas práticas e do que evitar serão adicionados na próxima etapa.')));
   return out.join('');
 }
+
+const IB_CONTEXTOS = [
+  { k: 'social', t: 'Redes sociais', d: 'Botão para o perfil do Rolê Agora em uma rede social. Aparece na página e no Footer.', onde: 'Página · Footer', usa: [['Tamanho', 'md'], ['Cor', 'surface ou subtle'], ['Ícone', 'Redes Sociais/*']], ex: [['surface', 'md', 'redes-sociais-instagram.outline', 'Instagram'], ['subtle', 'md', 'redes-sociais-spotify.outline', 'Spotify']], st: 'gray' },
+  { k: 'fechar', t: 'Fechar ou voltar em Drawer e Modal', d: 'Botão que fecha o Drawer ou o Modal, ou volta uma etapa dentro deles.', onde: 'Drawer · Modal', usa: [['Tamanho', 'sm'], ['Cor', 'overlay-light sobre imagem; surface sobre fundo sólido'], ['Ícone', 'fechar ou seta-esquerda']], ex: [['overlay-light', 'sm', 'botoes-de-controle-fechar.outline', 'Fechar'], ['surface', 'sm', 'botoes-de-controle-fechar.outline', 'Fechar']], st: 'dark' },
+  { k: 'voltar', t: 'Voltar de página', d: 'Botão de voltar no topo da página, no Header.', onde: 'Header', usa: [['Tamanho', 'sm'], ['Cor', 'surface'], ['Ícone', 'Direcionais/seta-esquerda']], ex: [['surface', 'sm', 'direcionais-seta-esquerda.outline', 'Voltar']], st: 'dark' },
+];
+const ibEl = (cor, tamanho, icone, label) => renderPreview(ibTree({ cor, tamanho, icone, label }));
+const IB_DOS = [
+  { ok: ibEl('surface', 'md', 'redes-sociais-instagram.outline', 'Instagram'), okT: 'Use o IconButton, trocando só o ícone, a cor e o tamanho.', no: `<span class="inline-flex h-8 w-24 items-center justify-center rounded-3xsm bg-bg-surface text-icon-default [&>svg]:h-4 [&>svg]:w-4">${svg('x')}</span>`, noT: 'Não crie botões de ícone novos, quadrados ou esticados: use o IconButton.' },
+  { ok: `<div class="flex items-center gap-sm">${ibEl('inverse', 'sm', 'botoes-de-controle-fechar.outline', 'Fechar')}<span class="text-desc-lg text-text-secondary">aria-label="Fechar"</span></div>`, okT: 'Dê nome acessível a toda instância, descrevendo a ação ou a rede.', no: `<div class="flex items-center gap-sm">${renderPreview(N('button', IB_BASE + ' ' + IB['surface'].bg + ' ' + IB_SIZE.sm, { type: 'button' }, [I('botoes-de-controle-fechar.outline')]))}<span class="text-desc-lg text-text-secondary">sem aria-label</span></div>`, noT: 'Sem texto visível e sem aria-label, leitores de tela anunciam só "botão".' },
+  { ok: `<div class="flex items-center gap-sm">${ibEl('surface', 'sm', 'direcionais-seta-esquerda.outline', 'Voltar')}${ibEl('surface', 'sm', 'botoes-de-controle-fechar.outline', 'Fechar')}</div>`, okT: 'Tamanho sm para voltar e fechar; md para redes sociais.', no: `<div class="flex items-center gap-sm">${ibEl('surface', 'md', 'direcionais-seta-esquerda.outline', 'Voltar')}${ibEl('surface', 'sm', 'redes-sociais-instagram.outline', 'Instagram')}</div>`, noT: 'Tamanhos trocados entre os contextos: o botão perde a consistência.' },
+];
+function iconbuttonSpecs(d) {
+  const ctx = section('Contextos de uso', `<p class="lim text-body text-text-secondary">O IconButton tem três contextos de uso. O componente é o mesmo; o contexto define tamanho, cor e ícone.</p><div class="grid grid-cols-1 gap-m lg:grid-cols-3">${IB_CONTEXTOS.map(c => card(`<div class="flex flex-col gap-m"><div class="flex min-h-[112px] items-center justify-center gap-sm rounded-3xsm p-m ${STAGES[c.st]}">${c.ex.map(e => ibEl(...e)).join('')}</div><div class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">${esc(c.onde)}</p><h3 class="font-display text-h6-m font-bold text-text-primary md:text-h6">${esc(c.t)}</h3><p class="lim text-desc-lg text-text-secondary">${esc(c.d)}</p></div><dl class="flex flex-col gap-xsm">${c.usa.map(([k, v]) => `<div class="flex gap-xsm text-desc-lg"><dt class="w-16 shrink-0 font-semibold text-text-primary">${k}</dt><dd class="text-text-secondary">${esc(v)}</dd></div>`).join('')}</dl></div>`)).join('')}</div>`);
+  const uso = section('Diretrizes de uso', grid2([
+    `<div class="flex flex-col gap-sm">${blockHead('Uso', '')}<p class="text-body text-text-primary"><strong>Quando usar.</strong> Nos três contextos de uso: redes sociais, fechar ou voltar em Drawer e Modal, e voltar de página.</p><p class="text-body text-text-primary"><strong>Quando não usar.</strong> Para ações com texto, use o Botão. Não crie botões circulares novos com ícone: use o IconButton.</p></div>`,
+    `<div class="flex flex-col gap-sm">${blockHead('Qualidade', '')}<p class="text-body text-text-primary"><strong>Acessibilidade.</strong> Sem texto visível, toda instância precisa de nome acessível (aria-label), como Voltar, Fechar ou Instagram.</p><p class="text-body text-text-primary"><strong>Conteúdo.</strong> O nome acessível descreve a ação ou a rede, sem a palavra botão. Evite ponto final.</p></div>`]));
+  return [ctx,
+    section('Variantes e estados', grid2(d.v.map(b => rowsBlock(b, true)))),
+    section('Propriedades', grid2(d.p.map(b => rowsBlock(b)))),
+    section('Anatomia', grid2(d.a.map(b => rowsBlock(b, true)))),
+    uso,
+    section("Do & Don't", IB_DOS.map(p => grid2([doCard(true, p.ok, p.okT), doCard(false, p.no, p.noT)])).join(''))].join('');
+}
+
+const EC_CONTEXTOS = [
+  { t: 'Listagem horizontal', onde: 'Carrosséis', d: 'Card em pé, com imagem de fundo. Usado em carrosséis e listas horizontais.', usa: [['Listagem', 'Horizontal'], ['Tamanho', '200 × 252 px'], ['Extras', 'Highlight, badge, brasões, blur e balão']], l: 'horizontal', st: 'gray' },
+  { t: 'Listagem vertical', onde: 'Agenda e listagens', d: 'Card em linha, com a imagem à esquerda. Usado na agenda de artista, na agenda de estabelecimento e nas páginas de listagem.', usa: [['Listagem', 'Vertical'], ['Tamanho', '312 × 90 px'], ['Extras', 'Sem highlight, badge, brasões, blur nem balão']], l: 'vertical', st: 'light' },
+];
+const ecEl = (l, extra) => renderPreview(ecTree(Object.assign({ listagem: l, highlight: false, badge: true, brasao: false, titulo: 'Los Campesinos', sub: 'Samba • Rock', data: '19/10 • 14h', local: 'Vila Madalena' }, extra || {})));
+const EC_DOS = [
+  { ok: ecEl('horizontal'), okT: 'Use a Listagem Horizontal em carrosséis.', no: `<div class="flex flex-col gap-sm">${ecEl('horizontal')}${ecEl('horizontal')}</div>`, noT: 'Não use a Listagem Horizontal em uma lista vertical: use a Vertical.' },
+  { ok: `<div class="flex flex-col gap-sm">${ecEl('vertical')}${ecEl('vertical', { titulo: 'Fresno', sub: 'Rock', data: '20/10 • 21h' })}</div>`, okT: 'Use a Listagem Vertical na agenda de artista, de estabelecimento e nas páginas de listagem.', no: `<div class="flex w-full gap-sm overflow-hidden">${ecEl('vertical')}${ecEl('vertical', { titulo: 'Fresno' })}</div>`, noT: 'Não use a Listagem Vertical em carrosséis: o card é largo demais e some do ritmo da lista.' },
+  { ok: ecEl('horizontal', { titulo: 'Corinthians x Flamengo', sub: 'Futebol', brasao: true }), okT: 'Títulos curtos, em sentence case e sem ponto final. Datas no formato 19/10 • 14h.', no: ecEl('horizontal', { titulo: 'CORINTHIANS X FLAMENGO – RODADA 12.', data: '19 de outubro às 14:00' }), noT: 'Título em caixa alta, com ponto final, e data fora do padrão.' },
+];
+function eventcardSpecs(d) {
+  const ctx = section('Contextos de uso', `<p class="lim text-body text-text-secondary">O EventCard tem duas listagens. O componente é o mesmo; a propriedade Listagem muda o layout conforme o contexto.</p><div class="grid grid-cols-1 gap-m lg:grid-cols-2">${EC_CONTEXTOS.map(c => card(`<div class="flex flex-col gap-m"><div class="flex min-h-[112px] items-center justify-center overflow-hidden rounded-3xsm p-m ${STAGES[c.st]}">${ecEl(c.l)}</div><div class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">${esc(c.onde)}</p><h3 class="font-display text-h6-m font-bold text-text-primary md:text-h6">${esc(c.t)}</h3><p class="lim text-desc-lg text-text-secondary">${esc(c.d)}</p></div><dl class="flex flex-col gap-xsm">${c.usa.map(([k, v]) => `<div class="flex gap-xsm text-desc-lg"><dt class="w-20 shrink-0 font-semibold text-text-primary">${k}</dt><dd class="text-text-secondary">${esc(v)}</dd></div>`).join('')}</dl></div>`)).join('')}</div>`);
+  const uso = section('Diretrizes de uso', grid2([
+    `<div class="flex flex-col gap-sm">${blockHead('Uso', '')}<p class="text-body text-text-primary"><strong>Quando usar.</strong> Para listar eventos. Em carrossel, use a Listagem Horizontal. Em agenda e páginas de listagem, use a Vertical.</p><p class="text-body text-text-primary"><strong>Quando não usar.</strong> Para produtos, use o Card. Não misture as duas listagens na mesma lista.</p></div>`,
+    `<div class="flex flex-col gap-sm">${blockHead('Qualidade', '')}<p class="text-body text-text-primary"><strong>Acessibilidade.</strong> O card inteiro é um único link. A imagem precisa de texto alternativo, e o texto sobre a imagem mantém contraste mínimo de 4,5:1.</p><p class="text-body text-text-primary"><strong>Conteúdo.</strong> Título com o nome do evento, em sentence case e sem ponto final. Data no formato 19/10 • 14h.</p></div>`]));
+  return [ctx,
+    section('Variantes e estados', grid2(d.v.map(b => rowsBlock(b, true)))),
+    section('Propriedades', grid2(d.p.map(b => rowsBlock(b)))),
+    section('Anatomia', grid2(d.a.map(b => rowsBlock(b, true)))),
+    uso,
+    section("Do & Don't", EC_DOS.map(p => grid2([doCard(true, p.ok, p.okT), doCard(false, p.no, p.noT)])).join(''))].join('');
+}
 function renderComponent(id) {
   const d = DOCS_BY_ID[id]; const lv = LEVELS.find(l => l[0] === d.lv);
   const head = `<header class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">${lv[2]}</p><h1 class="font-display text-h1-m font-bold text-text-primary md:text-h1">${d.n}</h1><div class="flex flex-wrap items-center gap-x-m gap-y-2xsm"><p class="text-desc text-text-secondary">${d.s}</p><a href="${FIGMA_FILE}?node-id=${d.fg}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-xsm text-desc text-action-primary hover:underline [&>svg]:h-4 [&>svg]:w-4">Abrir no Figma ${svg('chevron-right')}</a></div></header>`;
   const pg = id === 'icone' ? renderIconLib() : PG[id] ? renderPlayground(id) : card(`<div class="flex items-start gap-sm"><span class="text-icon-brand [&>svg]:h-4 [&>svg]:w-4">${svg('star')}</span><p class="text-desc-lg text-text-secondary">O playground interativo deste componente (estados e código React e Tailwind) chega na próxima etapa. Enquanto isso, consulte abaixo as especificações do Figma.</p></div>`);
-  const specs = d.custom ? botaoSpecs() : d.icons ? iconeSpecs(d) : genericSpecs(d);
+  const specs = id === 'eventcard' ? eventcardSpecs(d) : id === 'iconbutton' ? iconbuttonSpecs(d) : d.custom ? botaoSpecs() : d.icons ? iconeSpecs(d) : genericSpecs(d);
   return `<div class="flex flex-col gap-6xlg">${head}${pg}${specs}</div>`;
 }
 
@@ -1626,6 +1796,7 @@ const SEM_DESC = {
   border: [['O que é', 'Cores de contorno e divisão. Separam elementos sem competir com o conteúdo.'], ['Quando usar', 'default para divisores e contornos de cartões e campos em repouso; strong quando a separação precisa de mais ênfase, como os divisores de seção.'], ['Onde usar', 'Card, divisores, Input e Tabela.'], ['Evite', 'Usar cores de borda em texto ou ícone, e bordas de ação em elementos que não são interativos.']],
   action: [['O que é', 'Cor da marca aplicada à interação. Indica o que o usuário pode clicar.'], ['Quando usar', 'primary para a ação principal (botões Primary, texto e borda do Secondary, links); primary-hover para o estado hover de elementos primary; primary-subtle para fundos suaves de destaque, como um item selecionado.'], ['Onde usar', 'Botão, Link e demais elementos interativos.'], ['Evite', 'Aplicar em elementos decorativos ou não clicáveis, e usar duas ações Primary adjacentes.']],
   feedback: [['O que é', 'Cores de status. Comunicam sucesso, erro, atenção e informação.'], ['Quando usar', 'success, danger, warning e info para texto, borda e ícone do status; as versões -subtle para o fundo de mensagens, alertas e badges do mesmo status.'], ['Onde usar', 'Alertas, mensagens de formulário, badges e tags de status.'], ['Evite', 'Usar como cor decorativa ou de marca. Texto de status sobre fundo -subtle pode ficar abaixo de 4,5:1; verifique o contraste ou use text/primary.']],
+  badge: [['O que é', 'Cores do componente Badge. Cada tom tem um token de fundo e um de texto, que sempre andam juntos.'], ['Quando usar', 'brand para destaques de localização e distância; warning para tempo, calendário e medalhas; live para conteúdo ao vivo; neutral para informações de apoio; danger para status de atenção.'], ['Onde usar', 'Badge, no fundo (bg) e no rótulo (text).'], ['Evite', 'Misturar o fundo de um tom com o texto de outro, e usar estes tokens fora do Badge.']],
   icon: [['O que é', 'Cores específicas para ícones, separadas das de texto para permitir ajustes independentes.'], ['Quando usar', 'default para ícones comuns; secondary para ícones de apoio; disabled para estados desabilitados; on-action sobre fundos de ação; brand para destaque da marca; success, danger, warning e info para status.'], ['Onde usar', 'Ícone, Ícone com descrição e ícones dentro de Botão e Input.'], ['Evite', 'Usar cores color/text/* em ícones, e cores color/icon/* em texto.']],
 };
 function copyChip(text, display) { const id = storeCode(text); return `<button type="button" data-copy="${id}" title="Copiar ${escA(text)}" class="rounded-4xsm px-2xsm text-left font-mono text-desc text-text-secondary hover:bg-bg-subtle hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-text-primary">${display || esc(text)}</button>`; }
@@ -1659,6 +1830,32 @@ const vozMd = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibol
 function renderVoz() {
   const secs = VOZ.secoes.map((s, i) => section(`${i + 1}. ${s.t}`, `${s.sub ? `<p class="text-body text-text-secondary">${esc(s.sub)}</p>` : ''}<ul class="flex flex-col gap-sm">${s.itens.map(([k, v]) => `<li class="flex gap-sm text-body text-text-primary"><span class="mt-2xsm shrink-0 text-icon-brand [&>svg]:h-4 [&>svg]:w-4">${svg('check')}</span><span><span class="font-semibold">${esc(k)}.</span> ${esc(v)}</span></li>`).join('')}</ul>${s.datas ? `<div class="flex flex-col gap-sm">${blockHead('Datas por componente')}${table(['Componente', 'Formato', 'Exemplo'], s.datas.map(([c, f, e]) => [esc(c), `<span class="font-semibold">${esc(f)}</span>`, esc(e)]))}</div>` : ''}<div class="flex flex-col gap-sm">${blockHead("Do & Don't")}${table(['Faça', 'Não faça', 'Por quê'], s.dd.map(([ok, no, why]) => [`<span class="flex gap-xsm"><span class="mt-2xsm shrink-0 text-feedback-success [&>svg]:h-4 [&>svg]:w-4">${svg('check')}</span><span class="text-body text-text-primary">${vozMd(ok)}</span></span>`, `<span class="flex gap-xsm"><span class="mt-2xsm shrink-0 text-feedback-danger [&>svg]:h-4 [&>svg]:w-4">${svg('x')}</span><span class="text-body text-text-primary">${vozMd(no)}</span></span>`, `<span class="text-desc-lg text-text-secondary">${esc(why)}</span>`]))}</div>`, 'voz-' + (i + 1))).join('');
   return `<div class="flex flex-col gap-6xlg"><header class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">FUNDAMENTO</p><h1 class="font-display text-h1-m font-bold text-text-primary md:text-h1">${esc(VOZ.titulo)}</h1><p class="text-body text-text-secondary">${esc(VOZ.sub)}</p></header>${secs}</div>`;
+}
+/* ---------- Border radius ---------- */
+const RAIO_EX = [
+  ['Tile de ícone dentro de um painel', 'radius/3xsm', 8, 'spacing/m', 24, 'radius/xlg', 32],
+  ['Bloco de código dentro de um cartão', 'radius/3xsm', 8, 'spacing/sm', 16, 'radius/m', 24],
+  ['Imagem com respiro dentro de um cartão', 'radius/3xsm', 8, 'spacing/xsm', 8, 'radius/xsm', 16],
+  ['Campo dentro de um grupo compacto', 'radius/4xsm', 4, 'spacing/2xsm', 4, 'radius/3xsm', 8],
+  ['Cartão interno dentro de uma seção', 'radius/2xsm', 12, 'spacing/sm', 16, 'radius/lg', 28],
+  ['Cartão dentro de um modal', 'radius/xsm', 16, 'spacing/xsm', 8, 'radius/m', 24],
+  ['Cartão dentro de um painel largo', 'radius/xsm', 16, 'spacing/m', 24, 'radius/3xlg', 40],
+];
+const nest = (o, p, i, label) => `<div class="w-[180px] max-w-full bg-bg-brand-subtle" style="border-radius:${o}px;padding:${p}px"><div class="flex h-[72px] items-center justify-center bg-action-primary text-desc text-text-on-action" style="border-radius:${i}px">${label}</div></div>`;
+const RAIO_DD = [
+  { t: 'Raio externo = interno + padding', ok: nest(24, 16, 8, 'interno 8'), okT: 'Externo de 24 px = interno de 8 px + padding de 16 px: as curvas ficam concêntricas.', no: nest(8, 16, 8, 'interno 8'), noT: 'Externo de 8 px com padding de 16 px: o cartão externo fica menos arredondado que a soma e os cantos “apertam” o interno.' },
+  { t: 'Níveis com o mesmo raio', ok: nest(16, 8, 8, 'interno 8'), okT: 'Externo de 16 px = interno de 8 px + padding de 8 px.', no: nest(16, 8, 16, 'interno 16'), noT: 'Mesmo raio nos dois níveis: o espaço entre as bordas fica irregular nos cantos.' },
+  { t: 'Padding grande', ok: nest(32, 24, 8, 'interno 8'), okT: 'Externo de 32 px = interno de 8 px + padding de 24 px.', no: nest(16, 24, 16, 'interno 16'), noT: 'Externo de 16 px com padding de 24 px e interno de 16 px: o raio externo deveria ser 40 px.' },
+  { t: 'Sem padding', ok: nest(24, 0, 24, 'interno 24'), okT: 'Sem padding, o raio interno é igual ao externo (ex.: imagem colada nas bordas do cartão).', no: nest(24, 0, 8, 'interno 8'), noT: 'Sem padding e com interno menor: os cantos do elemento interno aparecem para fora do cartão.' },
+];
+function renderRaio() {
+  const eq = `<div class="flex flex-col items-start gap-xsm rounded-xsm bg-bg-subtle p-xlg"><p class="text-eyebrow font-bold uppercase text-text-secondary">Fórmula</p><p class="font-display text-h4-m font-bold text-text-primary md:text-h4">Border-radius externo = Border-radius interno + padding</p></div>`;
+  const regra = section('1. Regra', `${eq}<ul class="flex flex-col gap-sm">${['Quando um elemento arredondado fica dentro de outro, com espaço (padding) entre eles, o raio do elemento de fora é a soma do raio do elemento de dentro com esse padding.', 'Assim as curvas ficam concêntricas e o espaço entre as bordas parece o mesmo em todo o contorno, inclusive nos cantos.', 'Os tokens de spacing e de radius usam múltiplos de 4 px, então o resultado sempre cai em um token de radius (até 48 px, radius/5xlg).'].map(t => `<li class="flex gap-sm text-body text-text-primary"><span class="mt-2xsm shrink-0 text-icon-brand [&>svg]:h-4 [&>svg]:w-4">${svg('check')}</span><span>${esc(t)}</span></li>`).join('')}</ul><div class="flex flex-col gap-sm">${blockHead('Como calcular')}<ol class="flex flex-col gap-xsm text-body text-text-primary"><li>1. Veja o raio do elemento interno.</li><li>2. Some o padding do container, que é a distância entre as bordas.</li><li>3. Use o token de radius com o resultado.</li></ol></div>`);
+  const escala = section('2. Escala de radius', table(['Token', 'Valor', 'Classe Tailwind'], Object.keys(RADIUS).map(k => [esc('radius/' + k), k === 'pill' ? 'totalmente arredondado' : RADIUS[k] + ' px', copyChip('rounded-' + k)])));
+  const usos = section('3. Exemplos de uso', table(['Cenário', 'Interno', 'Padding', 'Externo'], RAIO_EX.map(([c, it, iv, pt, pv, ot, ov]) => [esc(c), `${esc(it)} · ${iv} px`, `${esc(pt)} · ${pv} px`, `<span class="font-semibold">${esc(ot)} · ${ov} px</span>`])));
+  const dd = section("4. Do & Don't", RAIO_DD.map(p => `<div class="flex flex-col gap-sm">${blockHead(p.t)}${grid2([doCard(true, p.ok, p.okT), doCard(false, p.no, p.noT)])}</div>`).join(''));
+  const exc = section('5. Exceções', `<ul class="flex flex-col gap-sm">${[['Elementos pill', 'Botões, chips, inputs e abas usam radius/pill e não entram no cálculo: o container ao redor segue o token de radius do próprio nível.'], ['Componentes em previews', 'O componente exibido dentro de um palco de preview mantém o raio do próprio design e não entra no cálculo.']].map(([k, v]) => `<li class="flex gap-sm text-body text-text-primary"><span class="mt-2xsm shrink-0 text-icon-brand [&>svg]:h-4 [&>svg]:w-4">${svg('check')}</span><span><span class="font-semibold">${esc(k)}.</span> ${esc(v)}</span></li>`).join('')}</ul>`);
+  return `<div class="flex flex-col gap-6xlg"><header class="flex flex-col gap-xsm"><p class="text-eyebrow font-bold uppercase text-text-secondary">FUNDAMENTO</p><h1 class="font-display text-h1-m font-bold text-text-primary md:text-h1">Border radius</h1><p class="text-body text-text-secondary">Como combinar cantos arredondados quando um elemento fica dentro de outro.</p></header>${regra}${escala}${usos}${dd}${exc}</div>`;
 }
 function renderGrids() {
   const blocks = GRIDS.map(g => {
@@ -1709,7 +1906,7 @@ function limitLines(root) {
 }
 function renderPage() {
   const el = $('#page');
-  el.innerHTML = current === 'inicio' ? renderInicio() : current === 'cores' ? renderCores() : current === 'tipografia' ? renderTipografia() : current === 'grids' ? renderGrids() : current === 'voz' ? renderVoz() : renderComponent(current);
+  el.innerHTML = current === 'inicio' ? renderInicio() : current === 'cores' ? renderCores() : current === 'tipografia' ? renderTipografia() : current === 'grids' ? renderGrids() : current === 'voz' ? renderVoz() : current === 'raio' ? renderRaio() : renderComponent(current);
   tokenize(el); limitLines(el);
 }
 
