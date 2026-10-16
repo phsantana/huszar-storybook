@@ -24,7 +24,7 @@ const primByName = Object.fromEntries(primList.map(p => [p.name, p]));
 
 /* [token, referência] — tokens que apontam para outro semântico usam o nome completo. Nomes seguem o padrão objeto/categoria/conceito/propriedade/modificador */
 const SEM_GROUPS = [
-  ['Fundo', 'bg', [['color/page/background','palette/neutral/50'],['color/surface/background','palette/neutral/50'],['color/neutral/background/subtle','palette/neutral/100'],['color/neutral/background/default','palette/neutral/300'],['color/neutral/background/strong','palette/neutral/400'],['color/brand/background/subtle','palette/twilight/100']]],
+  ['Fundo', 'bg', [['color/page/background','palette/neutral/50'],['color/surface/background','palette/neutral/50'],['color/neutral/background/subtle','palette/neutral/100'],['color/neutral/background/default','palette/neutral/300'],['color/neutral/background/strong','palette/neutral/400'],['color/brand/background/subtle','palette/twilight/50']]],
   ['Texto', 'text', [['color/neutral/text/primary','palette/neutral/900'],['color/neutral/text/secondary','palette/neutral/600'],['action/color/text/inverse','palette/neutral/50'],['action/color/text/primary','palette/twilight/500'],['color/brand/text','palette/twilight/500'],['color/feedback/text/success','palette/grass/600'],['color/feedback/text/danger','palette/sunset/500'],['color/feedback/text/warning','palette/sunny/700'],['color/feedback/text/info','palette/bluesky/800']]],
   ['Borda', 'border', [['color/neutral/border/default','palette/neutral/300'],['color/neutral/border/strong','palette/neutral/400'],['color/focus/border','palette/neutral/900'],['action/color/border/primary','palette/twilight/500'],['action/color/border/inverse','palette/neutral/50'],['color/feedback/border/success','palette/grass/500'],['color/feedback/border/danger','palette/sunset/500'],['color/feedback/border/warning','palette/sunny/500'],['color/feedback/border/info','palette/bluesky/700']]],
   ['Ação', 'action', [['action/color/background/primary','palette/twilight/500'],['action/color/background/primary-hover','palette/twilight/600'],['action/color/background/subtle','palette/twilight/50']]],
@@ -191,7 +191,7 @@ tailwind.config = { darkMode: ['variant', '[data-ds-theme="dark"] .ds-auto &'], 
   --hsz-color-neutral-background-subtle: var(--hsz-palette-neutral-100);
   --hsz-color-neutral-background-default: var(--hsz-palette-neutral-300);
   --hsz-color-neutral-background-strong: var(--hsz-palette-neutral-400);
-  --hsz-color-brand-background-subtle: var(--hsz-palette-twilight-100);
+  --hsz-color-brand-background-subtle: var(--hsz-palette-twilight-50);
   --hsz-color-neutral-text-primary: var(--hsz-palette-neutral-900);
   --hsz-color-neutral-text-secondary: var(--hsz-palette-neutral-600);
   --hsz-action-color-text-inverse: var(--hsz-palette-neutral-50);
@@ -357,7 +357,7 @@ tailwind.config = { darkMode: ['variant', '[data-ds-theme="dark"] .ds-auto &'], 
   --hsz-color-neutral-background-subtle: var(--hsz-palette-neutral-100);
   --hsz-color-neutral-background-default: var(--hsz-palette-neutral-300);
   --hsz-color-neutral-background-strong: var(--hsz-palette-neutral-400);
-  --hsz-color-brand-background-subtle: var(--hsz-palette-twilight-100);
+  --hsz-color-brand-background-subtle: var(--hsz-palette-twilight-50);
   --hsz-color-neutral-text-primary: var(--hsz-palette-neutral-900);
   --hsz-color-neutral-text-secondary: var(--hsz-palette-neutral-600);
   --hsz-action-color-text-inverse: var(--hsz-palette-neutral-50);
@@ -640,8 +640,8 @@ const CHIP = {
   destaque: { l: 'Destaque', on: GRAD + ' text-action-text-inverse font-semibold', off: null },
   primary: { l: 'Primary', on: 'bg-action-background-primary text-action-text-inverse font-semibold', off: CHIP_OFF },
   secondary: { l: 'Secondary', on: 'ring-1 ring-inset ring-action-border-primary text-action-text-primary font-semibold', off: CHIP_OFF },
-  soft: { l: 'Soft', on: 'bg-brand-background-subtle text-brand-text font-semibold', off: CHIP_OFF },
-  ghost: { l: 'Ghost', on: 'bg-neutral-background-subtle text-brand-text font-semibold', off: 'text-neutral-text-secondary' },
+  soft: { l: 'Soft', on: 'bg-action-background-subtle text-brand-text font-semibold', off: CHIP_OFF },
+  ghost: { l: 'Ghost', on: 'bg-transparent text-brand-text font-semibold', off: 'text-neutral-text-secondary' },
 };
 const chipSize = z => (z === 'md' ? 'text-desc-lg' : 'text-desc');
 PG.chip = {
@@ -731,9 +731,9 @@ PG.link = {
 
 /* ---------- SWITCHER ---------- */
 const SW_BOX = 'inline-flex gap-xsm rounded-pill bg-brand-background-subtle p-2xsm';
-const SW_ON = 'bg-action-background-primary text-action-text-inverse font-bold';
-const SW_OFF = 'bg-neutral-background-subtle text-neutral-text-secondary';
-const SW_ITEM = 'rounded-pill px-sm py-xsm text-desc whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-border';
+const SW_ON = 'bg-action-background-primary text-action-text-inverse';
+const SW_OFF = 'bg-transparent text-brand-text';
+const SW_ITEM = 'rounded-action px-action-inset-x-sm py-action-inset-y-sm text-desc font-semibold whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-border';
 const items = s => String(s.items).split(',').map(x => x.trim()).filter(Boolean).slice(0, 5);
 PG.switcher = {
   file: 'Switcher.jsx',
@@ -1305,7 +1305,7 @@ const DOCS = [
   a: [] },
 
 { id: 'chip', n: 'Chip', lv: 'a', fg: '9-1000', s: '2 componentes · 41 variantes · tokens da coleção Semantic',
-  v: [B('Chips', '40 variantes · Checked: True, False · Habilitado: True, False · Tipo: Destaque, Primary, Secondary, Soft, Ghost · Tamanho: Medium, Small', [['Destaque', 'selecionado: fundo em degradê #d43599 → #e11410 (sem token) · texto: action/color/text/inverse · não selecionado: borda e texto em degradê'], ['Primary', 'selecionado: fundo: action/color/background/primary · texto: action/color/text/inverse'], ['Secondary', 'selecionado: borda 1 px e texto: action/color/text/primary'], ['Soft', 'selecionado: fundo: color/brand/background/subtle · texto: color/brand/text'], ['Ghost', 'selecionado: fundo: color/neutral/background/subtle · texto: color/brand/text · não selecionado: sem borda e sem fundo · texto: color/neutral/text/secondary'], ['Não selecionado', 'Primary, Secondary e Soft: borda 1 px: color/neutral/border/default · texto: color/neutral/text/secondary'], ['Desabilitado', 'opacidade 32%']]), B('Carrossel de filtros', 'componente único', [['Padrão', '83 × 37 px · fundo: transparente · texto: action/color/text/primary']])],
+  v: [B('Chips', '40 variantes · Checked: True, False · Habilitado: True, False · Tipo: Destaque, Primary, Secondary, Soft, Ghost · Tamanho: Medium, Small', [['Destaque', 'selecionado: fundo em degradê #d43599 → #e11410 (sem token) · texto: action/color/text/inverse · não selecionado: borda e texto em degradê'], ['Primary', 'selecionado: fundo: action/color/background/primary · texto: action/color/text/inverse'], ['Secondary', 'selecionado: borda 1 px e texto: action/color/text/primary'], ['Soft', 'selecionado: fundo: action/color/background/subtle · texto: color/brand/text'], ['Ghost', 'selecionado: fundo transparente · texto: color/brand/text · não selecionado: sem borda e sem fundo · texto: color/neutral/text/secondary'], ['Não selecionado', 'Primary, Secondary e Soft: borda 1 px: color/neutral/border/default · texto: color/neutral/text/secondary'], ['Desabilitado', 'opacidade 32%']]), B('Carrossel de filtros', 'componente único', [['Padrão', '83 × 37 px · fundo: transparente · texto: action/color/text/primary']])],
   p: [B('Chips', '', [['Ícone', 'Booleana. Padrão: ligado.'], ['Ícone escolhido', 'Troca de instância.'], ['Checked', 'Variante. Opções: True, False.'], ['Habilitado', 'Variante. Opções: True, False.'], ['Tipo', 'Variante. Opções: Destaque, Primary, Secondary, Soft, Ghost.'], ['Tamanho', 'Variante. Opções: Medium, Small.']]), B('Carrossel de filtros', '', [['Container', 'SLOT']])],
   a: [B('Chips', ANAT, [['Dimensões', '78–84 × 34–37 px (varia entre variantes)'], ['Layout', 'Horizontal · padding T/D/B/E 8 (action/space/inset-y-sm) / 16 (action/space/inset-x-sm) / 8 (action/space/inset-y-sm) / 16 (action/space/inset-x-sm) px · gap 4 (space/2xsm) px'], ['Raio', '1000 (action/radius) px'], ['Borda', '1 px · color/neutral/border/default (não selecionado) · action/color/background/primary (Secondary selecionado)'], ['Tipografia', 'Descrição/Grande/Regular (não selecionado) · Descrição/Grande/Semi bold (selecionado)'], ['Camadas', 'Icon · Text']]), B('Carrossel de filtros', ANAT, [['Dimensões', '83 × 37 px'], ['Layout', 'Horizontal · padding 0 nos 4 lados px · gap 8 (space/xsm) px'], ['Tipografia', 'Descrição/Grande/Regular'], ['Camadas', 'Container']])] },
 
@@ -1419,9 +1419,9 @@ const DOCS = [
   a: [B('Átomos/Dot', ANAT, [['Dimensões', '8–16 × 8–16 px (varia entre variantes)']]), B('Moléculas/Pagination dot', ANAT, [['Dimensões', '112 × 16 px'], ['Layout', 'Horizontal · padding 0 · gap 16 (space/sm) px'], ['Camadas', 'Átomos/Dot (5×)']])] },
 
 { id: 'switcher', n: 'Switcher', lv: 'm', fg: '9-999', s: '1 componente · 1 variante · tokens da coleção Semantic',
-  v: [B('Switcher', '1 variante · Primeiro checked: True', [['Primeiro checked: True', '174 × 42 px · fundo: color scheme/brand/autumn/twilight-lightest · texto: action/color/text/inverse']])],
+  v: [B('Switcher', '1 variante · Primeiro checked: True', [['Primeiro checked: True', '174 × 42 px · fundo: color/brand/background/subtle · opção selecionada: action/color/background/primary com texto action/color/text/inverse · demais opções: transparente com texto color/brand/text']])],
   p: [B('Switcher', '', [['Primeiro checked', 'Variante. Opções: True.']])],
-  a: [B('Switcher', ANAT, [['Dimensões', '174 × 42 px'], ['Layout', 'Horizontal · padding 4 (space/2xsm) nos 4 lados px · gap 8 px'], ['Raio', '1000 (radius/pill) px'], ['Tipografia', 'Descrição/Pequena/Regular'], ['Camadas', 'Carrossel de filtros']])] },
+  a: [B('Switcher', ANAT, [['Dimensões', '174 × 42 px'], ['Layout', 'Horizontal · padding 4 (space/2xsm) nos 4 lados px · gap 8 (space/xsm) px'], ['Raio', '1000 (radius/pill) px'], ['Tipografia', 'Descrição/Pequena/Regular'], ['Camadas', 'Carrossel de filtros › Chips (Primary e Ghost)']])] },
 
 { id: 'tab', n: 'Tab', lv: 'm', fg: '9-1022', s: '2 componentes · 3 variantes · tokens da coleção Semantic',
   v: [B('Tab List', 'componente único', [['Padrão', '202 × 33 px · fundo: transparente · texto: action/color/text/primary · borda: color/neutral/text/secondary']]), B('Tab', '2 variantes · Checked: True, False', [['Checked: True', '101 × 33 px · texto: action/color/text/primary'], ['Checked: False', '101 × 29 px · texto: color/neutral/text/secondary']])],
